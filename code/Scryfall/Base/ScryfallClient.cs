@@ -1,6 +1,7 @@
 ﻿global using Sandbox.Scryfall.Types;
 global using System;
 global using System.Text.Json.Serialization;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -10,10 +11,11 @@ namespace Sandbox.Scryfall;
 // Never Null
 // Data Structures
 // Readable
+
 /// <summary>
 /// Interact with the scryfall API
 /// </summary>
-public class Scryfall
+public class ScryfallClient
 {
 	private const string BaseUrl = "https://api.scryfall.com";
 	private readonly SemaphoreSlim _gate = new( 1, 1 );
@@ -61,6 +63,12 @@ public class Scryfall
 	public Task<ApiList<Card>> SearchCardsAsync( string query )
 		=> FetchAsync<ApiList<Card>>( $"cards/search?q={Uri.EscapeDataString( query )}" );
 
+	/// <summary></summary>
+	public async Task<Stream> FetchStreamAsync( string url )
+	{
+		await ApiDelay();
+		return await Http.RequestStreamAsync( url );
+	}
 }
 
 
