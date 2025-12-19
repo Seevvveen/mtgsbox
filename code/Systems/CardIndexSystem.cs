@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿#nullable enable
+
+using System.Threading.Tasks;
 
 /// <summary>
 /// Assemble a dictionary from a set of cards
@@ -6,7 +8,7 @@
 public sealed class CardIndexSystem : GameObjectSystem<CardIndexSystem>, ISceneStartup
 {
 	// Composition
-	private BulkCacheSystem _bulkCacheSystem;
+	private BulkCacheSystem? _bulkCacheSystem;
 	private readonly CardIndexBuilder _cardIndexBuilder = new();
 
 	private const string OracleIndexKey = "oracle_cards.json";

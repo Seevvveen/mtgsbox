@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿#nullable enable
+using System.Collections.Concurrent;
 using System.Threading.Tasks;
 
 /// <summary>
@@ -188,7 +189,7 @@ public static class CardIndexStore
 	/// <summary>
 	/// Try to get an already-built index without triggering a build.
 	/// </summary>
-	public static bool TryGet( string key, out IReadOnlyDictionary<Guid, Card> index )
+	public static bool TryGet( string key, out IReadOnlyDictionary<Guid, Card>? index )
 	{
 		return _indexes.TryGetValue( key, out index );
 	}

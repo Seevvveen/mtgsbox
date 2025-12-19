@@ -62,16 +62,11 @@ public class CardRenderer : PanelComponent
 		try
 		{
 			_cardProvider = Components.GetInParentOrSelf<ICardProvider>()
-				?? throw new Exception("[CardRender] No Card Provider Found");
+				?? throw new Exception( "[CardRender] No Card Provider Found" );
 
 			Log.Info( "[CardRenderer] Waiting on Card Provider" );
-			
+
 			await _cardProvider.WhenReady;
-			if ( !_cardProvider.IsReady )
-			{
-				Log.Error( "[CardRenderer] Card provider failed to initialize" );
-				return;
-			}
 
 			// Get card from provider
 			_card = _cardProvider.Card;

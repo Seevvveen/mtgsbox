@@ -22,9 +22,6 @@ public class WorldCard : Component, ICardProvider
 
 		await IndexSystem.WhenReady;
 
-		if ( !IndexSystem.IsReady )
-			Log.Error( "[WorldCard] Cannot Display due to IndexSystem not being ready" );
-
 		Card = IndexSystem.GetCard( CardID );
 
 		if ( Card == null )

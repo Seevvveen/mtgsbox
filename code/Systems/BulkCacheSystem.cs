@@ -1,4 +1,6 @@
-﻿using Sandbox.Scryfall;
+﻿#nullable enable
+
+using Sandbox.Scryfall;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,7 +18,7 @@ public sealed class BulkCacheSystem : GameObjectSystem<BulkCacheSystem>, ISceneS
 	private const int MaxConcurrentDownloads = 2;
 	//Objects
 	private readonly ScryfallClient _apiClient = new();
-	public ApiList<BulkItem> BulkIndex { get; private set; }
+	public ApiList<BulkItem>? BulkIndex { get; private set; }
 	//Signals
 	private readonly AsyncGate _readyGate = new();
 	public Task WhenReady => _readyGate.WhenReady;
