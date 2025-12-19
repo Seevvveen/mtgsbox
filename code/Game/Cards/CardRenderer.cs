@@ -133,7 +133,6 @@ public class CardRenderer : PanelComponent
 				Log.Error( $"[CardRenderer] Card {card.Id} has no PNG image URI" );
 				return;
 			}
-
 			_card = card;
 			_image?.SetTexture( _card.ImageUris.Png.ToString() );
 		}

@@ -168,7 +168,7 @@
               "IdValue": "2712085c-9536-4be3-8fbc-2e638db622db"
             },
             "Property": "Position",
-            "Value": "-863.7402,-24.64531,73.38495"
+            "Value": "-211.9249,19.63721,88.58681"
           },
           {
             "Target": {
@@ -176,7 +176,7 @@
               "IdValue": "2712085c-9536-4be3-8fbc-2e638db622db"
             },
             "Property": "Rotation",
-            "Value": "-0.1950029,-0.00278153,0.9806989,-0.01398874"
+            "Value": "-0.03988913,0.1946561,0.1967464,0.9601086"
           }
         ],
         "MovedObjects": []
@@ -211,7 +211,7 @@
         {
           "__guid": "93c61ffb-3ba2-4e44-9b5c-0d1cde2d61f6",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (36)",
           "Position": "0,0,0",
           "Rotation": "0,0,0,1",
@@ -260,7 +260,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -302,7 +302,7 @@
         {
           "__guid": "5c11f0ea-2827-40f8-bb97-8e1b280a72bf",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (37)",
           "Position": "0,-21.53326,0",
           "Rotation": "0,0,0,1",
@@ -351,7 +351,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -393,7 +393,7 @@
         {
           "__guid": "0b0e47dc-86e9-4028-947a-7673d008d11d",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (38)",
           "Position": "0,-45.58688,0",
           "Rotation": "0,0,0,1",
@@ -442,7 +442,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -484,7 +484,7 @@
         {
           "__guid": "d224eac8-9cf2-4ad4-a2c1-ff391293e10c",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (39)",
           "Position": "0,-69.20389,0",
           "Rotation": "0,0,0,1",
@@ -533,7 +533,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -575,7 +575,7 @@
         {
           "__guid": "34563e94-49ab-4992-a81b-225ed5a67202",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (40)",
           "Position": "0,-91.92212,0",
           "Rotation": "0,0,0,1",
@@ -624,7 +624,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -666,7 +666,7 @@
         {
           "__guid": "d11064c0-60b4-45d1-a6f3-b2f110cd4f4e",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (41)",
           "Position": "0,-114.6946,0",
           "Rotation": "0,0,0,1",
@@ -715,7 +715,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -757,7 +757,7 @@
         {
           "__guid": "d4368917-fb6e-4e59-9b22-3ea5f47bf571",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (42)",
           "Position": "0,-139.0964,0",
           "Rotation": "0,0,0,1",
@@ -806,7 +806,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -848,7 +848,7 @@
         {
           "__guid": "490f1a0c-ba99-4295-9ef9-f8cc06cf47ab",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (43)",
           "Position": "0,-162.3882,0",
           "Rotation": "0,0,0,1",
@@ -897,7 +897,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -939,7 +939,7 @@
         {
           "__guid": "59648633-289b-4e2f-8ad6-84024416b5e2",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (44)",
           "Position": "0,-184.9804,0",
           "Rotation": "0,0,0,1",
@@ -988,7 +988,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -1030,7 +1030,7 @@
         {
           "__guid": "fbc1ac38-6230-4d0f-a978-4aaa5b9bbc6f",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (45)",
           "Position": "0,-208.5972,0",
           "Rotation": "0,0,0,1",
@@ -1079,7 +1079,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -1121,7 +1121,7 @@
         {
           "__guid": "3a56adf2-4feb-40c9-8c5a-34b0bd9b6f3f",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (46)",
           "Position": "0,-232.2198,0",
           "Rotation": "0,0,0,1",
@@ -1170,7 +1170,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -1212,7 +1212,7 @@
         {
           "__guid": "bcb6217c-7dc6-43cd-8fcd-d9312638b053",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (47)",
           "Position": "0.000001907349,-254.4346,0.0000000000002842171",
           "Rotation": "0,0,0,1",
@@ -1261,7 +1261,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -1303,7 +1303,7 @@
         {
           "__guid": "22b4e706-9741-4050-9af0-398d92e5931e",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (24)",
           "Position": "-0.000001907349,0,-31.09662",
           "Rotation": "0,0,0,1",
@@ -1352,7 +1352,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -1394,7 +1394,7 @@
         {
           "__guid": "cb9797df-4822-42ad-85c2-b69028e24918",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (25)",
           "Position": "-0.000001907349,-21.53326,-31.09662",
           "Rotation": "0,0,0,1",
@@ -1443,7 +1443,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -1485,7 +1485,7 @@
         {
           "__guid": "cb45eedb-f90e-4a85-8ec3-c4b388b27b26",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (26)",
           "Position": "-0.000001907349,-45.58688,-31.09662",
           "Rotation": "0,0,0,1",
@@ -1534,7 +1534,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -1576,7 +1576,7 @@
         {
           "__guid": "42fec17c-3336-4e71-b8ee-8aa7d8820925",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (27)",
           "Position": "-0.000001907349,-69.20389,-31.09662",
           "Rotation": "0,0,0,1",
@@ -1625,7 +1625,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -1667,7 +1667,7 @@
         {
           "__guid": "2902b27f-129b-4903-aed7-1425e9412151",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (28)",
           "Position": "-0.000001907349,-91.92212,-31.09662",
           "Rotation": "0,0,0,1",
@@ -1716,7 +1716,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -1758,7 +1758,7 @@
         {
           "__guid": "ac319d28-f5fe-45c4-9544-f85701d0d2ed",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (29)",
           "Position": "-0.000001907349,-114.6946,-31.09662",
           "Rotation": "0,0,0,1",
@@ -1807,7 +1807,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -1849,7 +1849,7 @@
         {
           "__guid": "92370a07-e702-4f05-9e69-7766ba358676",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (30)",
           "Position": "-0.000001907349,-139.0964,-31.09662",
           "Rotation": "0,0,0,1",
@@ -1898,7 +1898,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -1940,7 +1940,7 @@
         {
           "__guid": "e0380fcd-8899-43a2-8fb7-d5049e7e9eb4",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (31)",
           "Position": "-0.000001907349,-162.3882,-31.09662",
           "Rotation": "0,0,0,1",
@@ -1989,7 +1989,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -2031,7 +2031,7 @@
         {
           "__guid": "3261cc1f-ad3c-48b3-8a9a-f90d2d1f7b9a",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (32)",
           "Position": "-0.000001907349,-184.9804,-31.09662",
           "Rotation": "0,0,0,1",
@@ -2080,7 +2080,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -2122,7 +2122,7 @@
         {
           "__guid": "2ef17f4a-ca12-47b3-b135-5f0761ad6139",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (33)",
           "Position": "-0.000001907349,-208.5972,-31.09662",
           "Rotation": "0,0,0,1",
@@ -2171,7 +2171,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -2213,7 +2213,7 @@
         {
           "__guid": "3233a007-0e28-402d-bce9-c06d63497690",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (34)",
           "Position": "-0.000001907349,-232.2198,-31.09662",
           "Rotation": "0,0,0,1",
@@ -2262,7 +2262,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -2304,7 +2304,7 @@
         {
           "__guid": "56f546a8-7a34-48de-9eb5-888072063b9c",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (35)",
           "Position": "0,-254.4346,-31.09662",
           "Rotation": "0,0,0,1",
@@ -2353,7 +2353,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -2395,7 +2395,7 @@
         {
           "__guid": "c9208d55-e950-422b-bd6f-c1eba37a2673",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (12)",
           "Position": "0.000005722046,0,-62.2614",
           "Rotation": "0,0,0,1",
@@ -2444,7 +2444,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -2486,7 +2486,7 @@
         {
           "__guid": "9be7bd2e-aff9-4089-b4ea-4257c8aa460f",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (13)",
           "Position": "0.000005722046,-21.53326,-62.2614",
           "Rotation": "0,0,0,1",
@@ -2535,7 +2535,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -2577,7 +2577,7 @@
         {
           "__guid": "7e727373-fa52-425c-b0f8-8f18ffe7b805",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (14)",
           "Position": "0.000005722046,-45.58688,-62.2614",
           "Rotation": "0,0,0,1",
@@ -2626,7 +2626,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -2668,7 +2668,7 @@
         {
           "__guid": "4e7f142d-d00c-4476-89db-d26808518052",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (15)",
           "Position": "0.000005722046,-69.20389,-62.2614",
           "Rotation": "0,0,0,1",
@@ -2717,7 +2717,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -2759,7 +2759,7 @@
         {
           "__guid": "da50e866-5f0b-40b0-8806-e3277ca0ef62",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (16)",
           "Position": "0.000005722046,-91.92212,-62.2614",
           "Rotation": "0,0,0,1",
@@ -2808,7 +2808,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -2850,7 +2850,7 @@
         {
           "__guid": "2cf3bf66-f8b3-4611-9843-5779c5911c27",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (17)",
           "Position": "0.000005722046,-114.6946,-62.2614",
           "Rotation": "0,0,0,1",
@@ -2899,7 +2899,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -2941,7 +2941,7 @@
         {
           "__guid": "12251c3e-f8d2-4af4-ac94-d9106836ccaa",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (18)",
           "Position": "0.000005722046,-139.0964,-62.2614",
           "Rotation": "0,0,0,1",
@@ -2990,7 +2990,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -3032,7 +3032,7 @@
         {
           "__guid": "b12e64ef-8472-41b9-8cad-ff9741dcf0d2",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (19)",
           "Position": "0.000005722046,-162.3882,-62.2614",
           "Rotation": "0,0,0,1",
@@ -3081,7 +3081,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -3123,7 +3123,7 @@
         {
           "__guid": "2ebbce4d-5bde-46c8-84b2-2d5f3d6e1af7",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (20)",
           "Position": "0.000005722046,-184.9804,-62.2614",
           "Rotation": "0,0,0,1",
@@ -3172,7 +3172,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -3214,7 +3214,7 @@
         {
           "__guid": "98c4dbf6-7ad2-474b-b1ff-62e350fc64f1",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (21)",
           "Position": "0.000005722046,-208.5972,-62.2614",
           "Rotation": "0,0,0,1",
@@ -3263,7 +3263,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -3305,7 +3305,7 @@
         {
           "__guid": "46898d9e-576a-4dbf-90a6-9596751ee3f8",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (22)",
           "Position": "0.000005722046,-232.2198,-62.2614",
           "Rotation": "0,0,0,1",
@@ -3354,7 +3354,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -3396,7 +3396,7 @@
         {
           "__guid": "a43c42df-adea-411e-bb0f-24ecca911ba0",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (23)",
           "Position": "0.000003814697,-254.4346,-62.26141",
           "Rotation": "0,0,0,1",
@@ -3445,7 +3445,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -3487,7 +3487,7 @@
         {
           "__guid": "be014b8a-7232-423d-a585-30cd133b14fb",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (11)",
           "Position": "0,0.00001528859,-93.252",
           "Rotation": "0,0,0,1",
@@ -3504,7 +3504,7 @@
               "__type": "WorldCard",
               "__guid": "07a093bd-2672-4f34-a3e3-1cdca409a30e",
               "__enabled": true,
-              "CardID": "56ebc372-aabd-4174-a943-c7bf59e5028d",
+              "CardID": "ebbd37bc-1df2-49b3-87e1-603ca5cf0707",
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -3536,7 +3536,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -3578,7 +3578,7 @@
         {
           "__guid": "b56f8c26-a1cf-4bb2-8187-3f775703b6cd",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (10)",
           "Position": "0,-21.53325,-93.252",
           "Rotation": "0,0,0,1",
@@ -3627,7 +3627,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -3669,7 +3669,7 @@
         {
           "__guid": "f5aeaae4-ee3f-4d7f-a808-19d962bac3cd",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (9)",
           "Position": "0,-45.58687,-93.252",
           "Rotation": "0,0,0,1",
@@ -3718,7 +3718,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -3760,7 +3760,7 @@
         {
           "__guid": "227d99d5-1101-4391-90ae-9b407a1c02cf",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (8)",
           "Position": "0,-69.20387,-93.252",
           "Rotation": "0,0,0,1",
@@ -3809,7 +3809,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -3851,7 +3851,7 @@
         {
           "__guid": "3de2b06f-15d2-4e7c-a599-c0c998db9a64",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (7)",
           "Position": "0,-91.9221,-93.252",
           "Rotation": "0,0,0,1",
@@ -3900,7 +3900,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -3942,7 +3942,7 @@
         {
           "__guid": "430e46a4-7f58-4d51-b8ed-4b0db8218d65",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (6)",
           "Position": "0,-114.6946,-93.252",
           "Rotation": "0,0,0,1",
@@ -3991,7 +3991,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -4033,7 +4033,7 @@
         {
           "__guid": "2fda4206-9c61-4f2a-b679-214eef6c1c06",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (5)",
           "Position": "0,-139.0963,-93.252",
           "Rotation": "0,0,0,1",
@@ -4082,7 +4082,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -4124,7 +4124,7 @@
         {
           "__guid": "b095ed63-bec2-4db2-940c-b6af4ae0a46c",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (4)",
           "Position": "0,-162.3882,-93.252",
           "Rotation": "0,0,0,1",
@@ -4173,7 +4173,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -4215,7 +4215,7 @@
         {
           "__guid": "f939bae8-3609-496f-baaa-7bf0d3693fab",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (3)",
           "Position": "0,-184.9804,-93.252",
           "Rotation": "0,0,0,1",
@@ -4264,7 +4264,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -4306,7 +4306,7 @@
         {
           "__guid": "2d21ae40-2d26-4c72-bb3f-d705f71f8878",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (2)",
           "Position": "0,-208.5972,-93.252",
           "Rotation": "0,0,0,1",
@@ -4355,7 +4355,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -4397,7 +4397,7 @@
         {
           "__guid": "439464bf-cc2f-4057-bb04-749f2c99b91c",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object (1)",
           "Position": "0,-232.2198,-93.252",
           "Rotation": "0,0,0,1",
@@ -4446,7 +4446,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "367,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -4488,7 +4488,7 @@
         {
           "__guid": "1fc07f6e-4fd0-4c23-81c4-19b397758d05",
           "__version": 1,
-          "Flags": 32,
+          "Flags": 0,
           "Name": "Object",
           "Position": "0,-254.4346,-93.252",
           "Rotation": "0,0,0,1",
@@ -4537,7 +4537,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PanelSize": "512,512",
+              "PanelSize": "512,366.5454",
               "RenderOptions": {
                 "GameLayer": true,
                 "OverlayLayer": false,
@@ -4642,7 +4642,7 @@
             {
               "__guid": "34bbf34f-2314-49ad-9b46-dcd88e12f771",
               "__version": 1,
-              "Flags": 32,
+              "Flags": 0,
               "Name": "Object (47)",
               "Position": "-0.3869533,0.5259085,50.60246",
               "Rotation": "0,-0.7071067,0,0.7071068",
@@ -4691,7 +4691,7 @@
                   "OnComponentFixedUpdate": null,
                   "OnComponentStart": null,
                   "OnComponentUpdate": null,
-                  "PanelSize": "367,512",
+                  "PanelSize": "512,366.5454",
                   "RenderOptions": {
                     "GameLayer": true,
                     "OverlayLayer": false,
@@ -4824,7 +4824,7 @@
             {
               "__guid": "05d650ef-5fae-498e-bd0e-667e4598ad7d",
               "__version": 1,
-              "Flags": 32,
+              "Flags": 0,
               "Name": "Object (47)",
               "Position": "-0.3869533,0.5259085,50.60246",
               "Rotation": "0,-0.7071067,0,0.7071068",
@@ -4873,7 +4873,7 @@
                   "OnComponentFixedUpdate": null,
                   "OnComponentStart": null,
                   "OnComponentUpdate": null,
-                  "PanelSize": "367,512",
+                  "PanelSize": "512,366.5454",
                   "RenderOptions": {
                     "GameLayer": true,
                     "OverlayLayer": false,
@@ -4961,7 +4961,7 @@
             {
               "__guid": "c5ddb52c-e5e2-4686-942a-d4a2006ebcdd",
               "__version": 1,
-              "Flags": 32,
+              "Flags": 0,
               "Name": "Object (47)",
               "Position": "-0.3869533,0.5259085,50.60246",
               "Rotation": "0,-0.7071067,0,0.7071068",
@@ -5010,7 +5010,7 @@
                   "OnComponentFixedUpdate": null,
                   "OnComponentStart": null,
                   "OnComponentUpdate": null,
-                  "PanelSize": "367,512",
+                  "PanelSize": "512,366.5454",
                   "RenderOptions": {
                     "GameLayer": true,
                     "OverlayLayer": false,

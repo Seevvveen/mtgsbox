@@ -2,12 +2,32 @@
 
 public class WorldCard : Component, ICardProvider
 {
+
+	public CardIndexSystem IndexSystem { get; private set; }
+
+	private string _privateCardId { get; set; } = "7a977e2d-a2bc-42d1-be7d-36a822c6a66e";
+
 	// Card
-	[Property] string CardID { get; set; } = "56ebc372-aabd-4174-a943-c7bf59e5028d";
-	public Card Card { get; private set; }
+	[Property]
+	public string CardID
+	{
+		get { return _privateCardId; }
+		set
+		{
+			_privateCardId = value;
+			Card = UpdateCard();
+		}
+	}
+
+
+
+
+	//"56ebc372-aabd-4174-a943-c7bf59e5028d";
+	public Card? Card { get; private set; }
 
 	// Composite
-	public CardIndexSystem IndexSystem { get; private set; }
+
+
 	[RequireComponent] public CardRenderer CardRenderer { get; private set; }
 	[RequireComponent] public PlaneCollider PlaneCollider { get; private set; }
 
@@ -42,6 +62,22 @@ public class WorldCard : Component, ICardProvider
 
 		Log.Info( $"[WorldCard] Loaded card: {Card.Name ?? CardID}" );
 	}
+
+	protected Card UpdateCard()
+	{
+		if ( Card?.Id.ToString() != CardID )
+		{
+			Card = IndexSystem.GetCard( CardID );
+			CardRenderer.SetCard( Card );
+			return Card;
+		}
+		else
+		{
+			return Card;
+		}
+
+	}
+
 
 	protected override void OnAwake()
 	{
