@@ -23,7 +23,7 @@ public class WorldCard : Component, ICardProvider
 
 
 	//"56ebc372-aabd-4174-a943-c7bf59e5028d";
-	public Card? Card { get; private set; }
+	public Card Card { get; private set; }
 
 	// Composite
 
@@ -117,7 +117,7 @@ public class WorldCard : Component, ICardProvider
 	/// <summary>
 	/// Try to get card without throwing. Returns null if not ready.
 	/// </summary>
-	public Card? TryGetCard()
+	public Card TryGetCard()
 	{
 		return IsReady ? Card : null;
 	}

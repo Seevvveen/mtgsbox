@@ -20,10 +20,10 @@ public class CardRenderer : PanelComponent
 		base.OnTreeFirstBuilt();
 
 		// Build UI here (Panel root is guaranteed to exist)
-		_image = new Image
-		{
-			Parent = Panel
-		};
+		//_image = new Image
+		//{
+		//	Parent = Panel
+		//};
 
 		// ?? maybe
 		//_image.Style.Width = Length.Percent( 100 );
@@ -133,6 +133,7 @@ public class CardRenderer : PanelComponent
 				Log.Error( $"[CardRenderer] Card {card.Id} has no PNG image URI" );
 				return;
 			}
+
 			_card = card;
 			_image?.SetTexture( _card.ImageUris.Png.ToString() );
 		}
