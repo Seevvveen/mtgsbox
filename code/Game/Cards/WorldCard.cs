@@ -5,7 +5,7 @@ public class WorldCard : Component, ICardProvider
 
 	public CardIndexSystem IndexSystem { get; private set; }
 
-	private string _privateCardId { get; set; } = "7a977e2d-a2bc-42d1-be7d-36a822c6a66e";
+	private string _privateCardId { get; set; } = "ebbd37bc-1df2-49b3-87e1-603ca5cf0707";
 
 	// Card
 	[Property]
@@ -55,7 +55,7 @@ public class WorldCard : Component, ICardProvider
 		}
 
 		Card = IndexSystem.GetCard( CardID );
-		if ( Card == null )
+		if ( Card is null )
 		{
 			throw new Exception( $"Failed to find card '{CardID}' in index" );
 		}
@@ -65,6 +65,7 @@ public class WorldCard : Component, ICardProvider
 
 	protected Card UpdateCard()
 	{
+		if ( IndexSystem is null ) { return null; }
 		if ( Card?.Id.ToString() != CardID )
 		{
 			Card = IndexSystem.GetCard( CardID );
@@ -91,6 +92,13 @@ public class WorldCard : Component, ICardProvider
 		{
 			Log.Warning( $"[WorldCard] Started without being ready. Error: {Error?.Message}" );
 		}
+	}
+
+	protected override void OnEnabled()
+	{
+		//var a = new Random();
+		//var b = IndexSystem.DefaultCardsDictionary.ElementAt( a.Next( 0, IndexSystem.DefaultCardsDictionary.Count - 1 ) ).Key;
+		//CardID = b.ToString();
 	}
 
 	protected override void OnDestroy()

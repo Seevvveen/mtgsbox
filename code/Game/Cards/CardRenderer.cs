@@ -14,26 +14,9 @@ public class CardRenderer : PanelComponent
 
 	public float CardHeight = 512;
 
-
-	protected override void OnTreeFirstBuilt()
-	{
-		base.OnTreeFirstBuilt();
-
-		// Build UI here (Panel root is guaranteed to exist)
-		//_image = new Image
-		//{
-		//	Parent = Panel
-		//};
-
-		// ?? maybe
-		//_image.Style.Width = Length.Percent( 100 );
-		//_image.Style.Height = Length.Percent( 100 );
-	}
-
-
 	private void EnsureImage()
 	{
-		if ( Panel == null ) return;
+		if ( Panel is null ) return;
 
 		// If we lost the field (hotload), re-find an existing one in the tree
 		_image ??= Panel.ChildrenOfType<Image>().FirstOrDefault();
@@ -49,7 +32,7 @@ public class CardRenderer : PanelComponent
 		{
 			var aspectRatio = 63f / 88f;
 			var CardWidth = CardHeight * aspectRatio;
-			WorldPanel.PanelSize = new Vector2( CardHeight, CardWidth );
+			WorldPanel.PanelSize = new Vector2( CardWidth, CardHeight );
 		}
 		catch ( Exception ex )
 		{
@@ -68,7 +51,7 @@ public class CardRenderer : PanelComponent
 
 			// Get card from provider
 			_card = _cardProvider.Card;
-			if ( _card == null )
+			if ( _card is null )
 			{
 				Log.Warning( "[CardRenderer] Card is null from provider" );
 				return;
@@ -82,7 +65,7 @@ public class CardRenderer : PanelComponent
 			}
 
 			// Load the texture
-			var imageUrl = _card.ImageUris.Png.ToString();
+			var imageUrl = _card.ImageUris.Normal.ToString();
 			if ( string.IsNullOrWhiteSpace( imageUrl ) )
 			{
 				Log.Error( $"[CardRenderer] Card {_card} has empty image URL" );
