@@ -4,7 +4,7 @@
 /// Manages card data and coordinates child components.
 /// Waits for CardIndexSystem once, then operates synchronously.
 /// </summary>
-public class WorldCard : Component
+public class WorldCard : Component, Component.ExecuteInEditor
 {
 	[Property, RequireComponent]
 	public CardRenderer CardRenderer { get; private set; }
@@ -19,6 +19,20 @@ public class WorldCard : Component
 	public Card Card { get; private set; }
 
 	private CardIndexSystem IndexSystem => Scene.GetSystem<CardIndexSystem>();
+
+	public const float CardHeight = 512f;
+	public const float CardAspectRatio = 63f / 88f;
+	public static readonly float CardWidth = CardHeight * CardAspectRatio;
+	public static readonly Vector2 CardSize = new( CardWidth, CardHeight );
+
+
+
+	protected override void OnAwake()
+	{
+		PlaneCollider.Normal = Vector3.Forward;
+		PlaneCollider.Scale = CardSize * Sandbox.UI.WorldPanel.ScreenToWorldScale;
+		CardRenderer.WorldPanel.PanelSize = CardSize;
+	}
 
 	protected override async Task OnLoad()
 	{
