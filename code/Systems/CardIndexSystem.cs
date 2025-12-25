@@ -1,13 +1,11 @@
-﻿#nullable enable
-
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 /// <summary>
-/// Assemble a dictionary from a set of cards
+/// Manages card data dictionaries with async initialization.
+/// Contract: Provides non-nullable cards or throws descriptive exceptions.
 /// </summary>
 public sealed class CardIndexSystem : GameObjectSystem<CardIndexSystem>, ISceneStartup
 {
-	// Composition
 	private BulkCacheSystem? _bulkCacheSystem;
 	private readonly CardIndexBuilder _cardIndexBuilder = new();
 
@@ -18,15 +16,15 @@ public sealed class CardIndexSystem : GameObjectSystem<CardIndexSystem>, ISceneS
 	private readonly AsyncGate _readyGate = new();
 	public Task WhenReady => _readyGate.WhenReady;
 	public bool IsReady => _readyGate.IsSucceeded;
-	public bool HasFailed => _readyGate.IsFailed;
-	public Exception? Error => _readyGate.Error;
 
 	private TaskSource _taskSource;
 
-	// Card Dictionaries
-	public IReadOnlyDictionary<Guid, Card> OracleDictionary { get; private set; } =
+	// Single source of truth - use DefaultCards for gameplay
+	public IReadOnlyDictionary<Guid, Card> Cards { get; private set; } =
 		new Dictionary<Guid, Card>();
-	public IReadOnlyDictionary<Guid, Card> DefaultCardsDictionary { get; private set; } =
+
+	// Oracle for reference/lookup only
+	public IReadOnlyDictionary<Guid, Card> OracleCards { get; private set; } =
 		new Dictionary<Guid, Card>();
 
 	public CardIndexSystem( Scene scene ) : base( scene )
@@ -34,162 +32,138 @@ public sealed class CardIndexSystem : GameObjectSystem<CardIndexSystem>, ISceneS
 		_taskSource = TaskSource.Create();
 	}
 
-	/// <summary>
-	/// Orchestrate Building Dictionaries
-	/// </summary>
 	void ISceneStartup.OnHostInitialize()
 	{
-		// Fire and forget - gate handles all signaling
 		_readyGate.Run( _taskSource, InitializeAsync );
 	}
 
 	private async Task InitializeAsync()
 	{
 		_bulkCacheSystem = BulkCacheSystem.Current;
-
-		Log.Info( "[CardIndexSystem] Waiting for Bulk System" );
 		await _bulkCacheSystem.WhenReady;
 
-		if ( !_bulkCacheSystem.IsReady )
-		{
-			throw new Exception( "BulkCacheSystem not ready after WhenReady" );
-		}
-
-		// Load card indexes with TaskSource for cancellation support
+		// Load oracle (full database)
 		if ( FileSystem.Data.FileExists( OracleIndexKey ) )
 		{
-			OracleDictionary = await CardIndexStore.GetOrBuildAsync(
+			OracleCards = await CardIndexStore.GetOrBuildAsync(
 				OracleIndexKey,
 				_taskSource,
 				() => _cardIndexBuilder.BuildFromFileAsync( _taskSource, OracleIndexKey )
 			);
-			Log.Info( $"[CardIndexSystem] Loaded {OracleDictionary.Count} oracle cards" );
+			Log.Info( $"[CardIndexSystem] Loaded {OracleCards.Count} oracle cards" );
 		}
 
+		// Load default (gameplay subset)
 		if ( FileSystem.Data.FileExists( DefaultIndexKey ) )
 		{
-			DefaultCardsDictionary = await CardIndexStore.GetOrBuildAsync(
+			Cards = await CardIndexStore.GetOrBuildAsync(
 				DefaultIndexKey,
 				_taskSource,
 				() => _cardIndexBuilder.BuildFromFileAsync( _taskSource, DefaultIndexKey )
 			);
-			Log.Info( $"[CardIndexSystem] Loaded {DefaultCardsDictionary.Count} default cards" );
+			Log.Info( $"[CardIndexSystem] Loaded {Cards.Count} gameplay cards" );
 		}
 
-		// Ensure we have at least one index
-		if ( OracleDictionary.Count == 0 && DefaultCardsDictionary.Count == 0 )
-		{
-			throw new Exception( "No card indexes loaded - both oracle and default are empty" );
-		}
+		// Fail fast if no data
+		if ( Cards.Count == 0 )
+			throw new InvalidOperationException(
+				"No gameplay cards loaded - check default_cards.json exists" );
 
 		Log.Info( "[CardIndexSystem] Ready" );
 	}
 
-	// ========== CARD LOOKUP METHODS ==========
+	// ========== PRIMARY API (Non-nullable, fail-fast) ==========
 
-	public Card? GetCard( Guid id )
+	/// <summary>
+	/// Get a gameplay card by ID. Throws if not found.
+	/// </summary>
+	public Card GetCard( Guid id )
 	{
-		return DefaultCardsDictionary.TryGetValue( id, out var card ) ? card : null;
+		if ( Cards.TryGetValue( id, out var card ) )
+			return card;
+
+		throw new KeyNotFoundException(
+			$"Card {id} not found in gameplay cards (loaded: {Cards.Count})" );
 	}
 
-	public Card? GetCard( string id )
+	/// <summary>
+	/// Get a gameplay card by string ID. Throws if invalid format or not found.
+	/// </summary>
+	public Card GetCard( string id )
 	{
 		if ( !Guid.TryParse( id, out var guid ) )
-		{
-			Log.Warning( $"[CardIndexSystem] Invalid GUID format: {id}" );
-			return null;
-		}
+			throw new ArgumentException( $"Invalid card ID format: '{id}'", nameof( id ) );
+
 		return GetCard( guid );
 	}
 
-	public Card? GetCardOrNull( Guid id )
+	/// <summary>
+	/// Get a random gameplay card.
+	/// </summary>
+	public Card GetRandomCard()
 	{
-		return OracleDictionary.TryGetValue( id, out var card ) ? card : null;
+		var keys = Cards.Keys.ToArray();
+		var randomKey = keys[Random.Shared.Next( keys.Length )];
+		return Cards[randomKey];
 	}
 
-	public Card GetCardOrDefault( Guid id, Card defaultCard )
+	// ========== OPTIONAL SAFE API (If you need null checks) ==========
+
+	/// <summary>
+	/// Try to get a card. Returns false if not found.
+	/// Use this if missing cards are expected/valid.
+	/// </summary>
+	public bool TryGetCard( Guid id, out Card card )
 	{
-		return OracleDictionary.TryGetValue( id, out var card ) ? card : defaultCard;
+		return Cards.TryGetValue( id, out card );
 	}
 
-	public bool HasCard( Guid id )
-	{
-		return OracleDictionary.ContainsKey( id );
-	}
+	/// <summary>
+	/// Check if a card exists without retrieving it.
+	/// </summary>
+	public bool HasCard( Guid id ) => Cards.ContainsKey( id );
+
+	// ========== BULK OPERATIONS ==========
 
 	public IEnumerable<Card> GetCards( IEnumerable<Guid> ids )
 	{
 		foreach ( var id in ids )
-		{
-			if ( OracleDictionary.TryGetValue( id, out var card ) )
+			if ( Cards.TryGetValue( id, out var card ) )
 				yield return card;
-		}
-	}
-
-	public List<Card> GetCardsAsList( IEnumerable<Guid> ids )
-	{
-		var result = new List<Card>();
-		foreach ( var id in ids )
-		{
-			if ( OracleDictionary.TryGetValue( id, out var card ) )
-				result.Add( card );
-		}
-		return result;
 	}
 
 	public IEnumerable<Card> FindCards( Func<Card, bool> predicate )
 	{
-		return OracleDictionary.Values.Where( predicate );
+		return Cards.Values.Where( predicate );
 	}
 
-	public IEnumerable<Card> GetAllCards()
-	{
-		return OracleDictionary.Values;
-	}
+	public IEnumerable<Card> GetAllCards() => Cards.Values;
 
 	// ========== INDEX MANAGEMENT ==========
 
-	/// <summary>
-	/// Rebuild the oracle index and update the cached copy.
-	/// </summary>
-	public async Task<IReadOnlyDictionary<Guid, Card>> RebuildOracleIndex()
+	public async Task RebuildIndexes()
 	{
-		OracleDictionary = await CardIndexStore.RebuildAsync(
+		OracleCards = await CardIndexStore.RebuildAsync(
 			OracleIndexKey,
 			_taskSource,
 			() => _cardIndexBuilder.BuildFromFileAsync( _taskSource, OracleIndexKey )
 		);
 
-		Log.Info( $"[CardIndexSystem] Rebuilt oracle index: {OracleDictionary.Count} cards" );
-		return OracleDictionary;
-	}
-
-	/// <summary>
-	/// Rebuild the default card index and update the cached copy.
-	/// </summary>
-	public async Task<IReadOnlyDictionary<Guid, Card>> RebuildDefaultIndex()
-	{
-		DefaultCardsDictionary = await CardIndexStore.RebuildAsync(
+		Cards = await CardIndexStore.RebuildAsync(
 			DefaultIndexKey,
 			_taskSource,
 			() => _cardIndexBuilder.BuildFromFileAsync( _taskSource, DefaultIndexKey )
 		);
 
-		Log.Info( $"[CardIndexSystem] Rebuilt default index: {DefaultCardsDictionary.Count} cards" );
-		return DefaultCardsDictionary;
+		Log.Info( $"[CardIndexSystem] Rebuilt indexes: {Cards.Count} gameplay, {OracleCards.Count} oracle" );
 	}
 
-	/// <summary>
-	/// Clear all cached card indexes so they rebuild on next load.
-	/// </summary>
 	public void ClearIndexes()
 	{
 		CardIndexStore.Clear( OracleIndexKey );
 		CardIndexStore.Clear( DefaultIndexKey );
-
-		OracleDictionary = new Dictionary<Guid, Card>();
-		DefaultCardsDictionary = new Dictionary<Guid, Card>();
-
+		Cards = new Dictionary<Guid, Card>();
+		OracleCards = new Dictionary<Guid, Card>();
 		Log.Info( "[CardIndexSystem] Cleared all indexes" );
 	}
 }

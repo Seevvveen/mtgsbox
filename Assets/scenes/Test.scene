@@ -169,97 +169,6 @@
           ],
           "Children": [
             {
-              "__guid": "5dd33d64-cadd-4ba5-9944-a7c00c51f263",
-              "__version": 1,
-              "Flags": 32,
-              "Name": "Object (47)",
-              "Position": "-62.40617,0.5259085,26.34127",
-              "Rotation": "0,-0.7071067,0,0.7071068",
-              "Scale": "1.953125,2.724796,20",
-              "Tags": "",
-              "Enabled": true,
-              "NetworkMode": 2,
-              "NetworkInterpolation": true,
-              "NetworkOrphaned": 0,
-              "NetworkTransmit": true,
-              "OwnerTransfer": 1,
-              "Components": [
-                {
-                  "__type": "WorldCard",
-                  "__guid": "e180da66-2ce0-4990-8ee7-6b847bd273d8",
-                  "__enabled": true,
-                  "CardID": "56ebc372-aabd-4174-a943-c7bf59e5028d",
-                  "OnComponentDestroy": null,
-                  "OnComponentDisabled": null,
-                  "OnComponentEnabled": null,
-                  "OnComponentFixedUpdate": null,
-                  "OnComponentStart": null,
-                  "OnComponentUpdate": null
-                },
-                {
-                  "__type": "CardRenderer",
-                  "__guid": "256e6001-d0d4-4780-9c6f-8dc4ef6b2c90",
-                  "__enabled": true,
-                  "OnComponentDestroy": null,
-                  "OnComponentDisabled": null,
-                  "OnComponentEnabled": null,
-                  "OnComponentFixedUpdate": null,
-                  "OnComponentStart": null,
-                  "OnComponentUpdate": null
-                },
-                {
-                  "__type": "Sandbox.WorldPanel",
-                  "__guid": "e88648c2-245d-48ed-9e5f-d42552db5d47",
-                  "__enabled": true,
-                  "HorizontalAlign": "Center",
-                  "InteractionRange": 1000,
-                  "LookAtCamera": false,
-                  "OnComponentDestroy": null,
-                  "OnComponentDisabled": null,
-                  "OnComponentEnabled": null,
-                  "OnComponentFixedUpdate": null,
-                  "OnComponentStart": null,
-                  "OnComponentUpdate": null,
-                  "PanelSize": "367,512",
-                  "RenderOptions": {
-                    "GameLayer": true,
-                    "OverlayLayer": false,
-                    "BloomLayer": false,
-                    "AfterUILayer": false
-                  },
-                  "RenderScale": 1,
-                  "VerticalAlign": "Center"
-                },
-                {
-                  "__type": "Sandbox.PlaneCollider",
-                  "__guid": "b7a413f1-7481-4ba6-b079-fff8632ef080",
-                  "__enabled": true,
-                  "Center": "0,0,0",
-                  "ColliderFlags": 0,
-                  "Elasticity": null,
-                  "Friction": null,
-                  "IsTrigger": false,
-                  "Normal": "90,0,0",
-                  "OnComponentDestroy": null,
-                  "OnComponentDisabled": null,
-                  "OnComponentEnabled": null,
-                  "OnComponentFixedUpdate": null,
-                  "OnComponentStart": null,
-                  "OnComponentUpdate": null,
-                  "OnObjectTriggerEnter": null,
-                  "OnObjectTriggerExit": null,
-                  "OnTriggerEnter": null,
-                  "OnTriggerExit": null,
-                  "RollingResistance": null,
-                  "Scale": "18.6,26",
-                  "Static": true,
-                  "Surface": null,
-                  "SurfaceVelocity": "0,0,0"
-                }
-              ],
-              "Children": []
-            },
-            {
               "__guid": "e4482403-041d-440c-b47e-c71ba031978c",
               "__version": 1,
               "Flags": 32,
@@ -279,7 +188,7 @@
                   "__type": "WorldCard",
                   "__guid": "93da70cd-705a-4638-9676-ec4bbcc33529",
                   "__enabled": true,
-                  "CardID": "56ebc372-aabd-4174-a943-c7bf59e5028d",
+                  "ID": null,
                   "OnComponentDestroy": null,
                   "OnComponentDisabled": null,
                   "OnComponentEnabled": null,
@@ -349,13 +258,59 @@
                 }
               ],
               "Children": []
-            },
+            }
+          ]
+        },
+        {
+          "__guid": "222fe874-6a82-4bdf-a6c4-ed4d46b3a1eb",
+          "__version": 1,
+          "Flags": 0,
+          "Name": "Graveyard",
+          "Position": "530.434,-197.7431,-16.65916",
+          "Rotation": "0,0,0,1",
+          "Scale": "0.512,0.367,0.05",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkInterpolation": true,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [
+            {
+              "__type": "Sandbox.ModelRenderer",
+              "__guid": "a1250362-8f6e-412f-89f1-cd4878e498b8",
+              "__enabled": true,
+              "BodyGroups": 18446744073709551615,
+              "CreateAttachments": false,
+              "LodOverride": null,
+              "MaterialGroup": null,
+              "MaterialOverride": null,
+              "Materials": null,
+              "Model": "models/dev/box.vmdl",
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "RenderOptions": {
+                "GameLayer": true,
+                "OverlayLayer": false,
+                "BloomLayer": false,
+                "AfterUILayer": false
+              },
+              "RenderType": "On",
+              "Tint": "1,1,1,1"
+            }
+          ],
+          "Children": [
             {
               "__guid": "080ad984-ac8e-4464-b29b-2cdc0dc35a94",
               "__version": 1,
               "Flags": 32,
               "Name": "Object (47)",
-              "Position": "65.34803,0.5259085,26.34127",
+              "Position": "1.855202,0.5259085,26.34127",
               "Rotation": "0,-0.7071067,0,0.7071068",
               "Scale": "1.953125,2.724796,20",
               "Tags": "",
@@ -370,7 +325,7 @@
                   "__type": "WorldCard",
                   "__guid": "1a3e5f39-3835-4244-afbb-5404c45a2daa",
                   "__enabled": true,
-                  "CardID": "56ebc372-aabd-4174-a943-c7bf59e5028d",
+                  "ID": null,
                   "OnComponentDestroy": null,
                   "OnComponentDisabled": null,
                   "OnComponentEnabled": null,
@@ -444,51 +399,6 @@
           ]
         },
         {
-          "__guid": "222fe874-6a82-4bdf-a6c4-ed4d46b3a1eb",
-          "__version": 1,
-          "Flags": 0,
-          "Name": "Graveyard",
-          "Position": "530.434,-197.7431,-16.65916",
-          "Rotation": "0,0,0,1",
-          "Scale": "0.512,0.367,0.05",
-          "Tags": "",
-          "Enabled": true,
-          "NetworkMode": 2,
-          "NetworkInterpolation": true,
-          "NetworkOrphaned": 0,
-          "NetworkTransmit": true,
-          "OwnerTransfer": 1,
-          "Components": [
-            {
-              "__type": "Sandbox.ModelRenderer",
-              "__guid": "a1250362-8f6e-412f-89f1-cd4878e498b8",
-              "__enabled": true,
-              "BodyGroups": 18446744073709551615,
-              "CreateAttachments": false,
-              "LodOverride": null,
-              "MaterialGroup": null,
-              "MaterialOverride": null,
-              "Materials": null,
-              "Model": "models/dev/box.vmdl",
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null,
-              "RenderOptions": {
-                "GameLayer": true,
-                "OverlayLayer": false,
-                "BloomLayer": false,
-                "AfterUILayer": false
-              },
-              "RenderType": "On",
-              "Tint": "1,1,1,1"
-            }
-          ],
-          "Children": []
-        },
-        {
           "__guid": "c690b92c-f0c5-4c6d-9a8a-3ff776febfee",
           "__version": 1,
           "Flags": 0,
@@ -531,7 +441,99 @@
               "Tint": "1,1,1,1"
             }
           ],
-          "Children": []
+          "Children": [
+            {
+              "__guid": "5dd33d64-cadd-4ba5-9944-a7c00c51f263",
+              "__version": 1,
+              "Flags": 32,
+              "Name": "Object (47)",
+              "Position": "-0.1877993,0.5259085,26.34127",
+              "Rotation": "0,-0.7071067,0,0.7071068",
+              "Scale": "1.953125,2.724796,20",
+              "Tags": "",
+              "Enabled": true,
+              "NetworkMode": 2,
+              "NetworkInterpolation": true,
+              "NetworkOrphaned": 0,
+              "NetworkTransmit": true,
+              "OwnerTransfer": 1,
+              "Components": [
+                {
+                  "__type": "WorldCard",
+                  "__guid": "e180da66-2ce0-4990-8ee7-6b847bd273d8",
+                  "__enabled": true,
+                  "ID": null,
+                  "OnComponentDestroy": null,
+                  "OnComponentDisabled": null,
+                  "OnComponentEnabled": null,
+                  "OnComponentFixedUpdate": null,
+                  "OnComponentStart": null,
+                  "OnComponentUpdate": null
+                },
+                {
+                  "__type": "CardRenderer",
+                  "__guid": "256e6001-d0d4-4780-9c6f-8dc4ef6b2c90",
+                  "__enabled": true,
+                  "OnComponentDestroy": null,
+                  "OnComponentDisabled": null,
+                  "OnComponentEnabled": null,
+                  "OnComponentFixedUpdate": null,
+                  "OnComponentStart": null,
+                  "OnComponentUpdate": null
+                },
+                {
+                  "__type": "Sandbox.WorldPanel",
+                  "__guid": "e88648c2-245d-48ed-9e5f-d42552db5d47",
+                  "__enabled": true,
+                  "HorizontalAlign": "Center",
+                  "InteractionRange": 1000,
+                  "LookAtCamera": false,
+                  "OnComponentDestroy": null,
+                  "OnComponentDisabled": null,
+                  "OnComponentEnabled": null,
+                  "OnComponentFixedUpdate": null,
+                  "OnComponentStart": null,
+                  "OnComponentUpdate": null,
+                  "PanelSize": "367,512",
+                  "RenderOptions": {
+                    "GameLayer": true,
+                    "OverlayLayer": false,
+                    "BloomLayer": false,
+                    "AfterUILayer": false
+                  },
+                  "RenderScale": 1,
+                  "VerticalAlign": "Center"
+                },
+                {
+                  "__type": "Sandbox.PlaneCollider",
+                  "__guid": "b7a413f1-7481-4ba6-b079-fff8632ef080",
+                  "__enabled": true,
+                  "Center": "0,0,0",
+                  "ColliderFlags": 0,
+                  "Elasticity": null,
+                  "Friction": null,
+                  "IsTrigger": false,
+                  "Normal": "90,0,0",
+                  "OnComponentDestroy": null,
+                  "OnComponentDisabled": null,
+                  "OnComponentEnabled": null,
+                  "OnComponentFixedUpdate": null,
+                  "OnComponentStart": null,
+                  "OnComponentUpdate": null,
+                  "OnObjectTriggerEnter": null,
+                  "OnObjectTriggerExit": null,
+                  "OnTriggerEnter": null,
+                  "OnTriggerExit": null,
+                  "RollingResistance": null,
+                  "Scale": "18.6,26",
+                  "Static": true,
+                  "Surface": null,
+                  "SurfaceVelocity": "0,0,0"
+                }
+              ],
+              "Children": []
+            }
+          ]
         }
       ]
     },

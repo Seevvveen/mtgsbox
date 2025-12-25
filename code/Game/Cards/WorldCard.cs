@@ -1,132 +1,55 @@
 ﻿using System.Threading.Tasks;
 
-public class WorldCard : Component, ICardProvider
+/// <summary>
+/// Manages card data and coordinates child components.
+/// Waits for CardIndexSystem once, then operates synchronously.
+/// </summary>
+public class WorldCard : Component
 {
+	[Property, RequireComponent]
+	public CardRenderer CardRenderer { get; private set; }
 
-	public CardIndexSystem IndexSystem { get; private set; }
+	[Property, RequireComponent]
+	public PlaneCollider PlaneCollider { get; private set; }
 
-	private string _privateCardId { get; set; } = "ebbd37bc-1df2-49b3-87e1-603ca5cf0707";
+	[Property, Change( nameof( OnIDChanged ) )]
+	public string ID { get; set; }
 
-	// Card
-	[Property]
-	public string CardID
-	{
-		get { return _privateCardId; }
-		set
-		{
-			_privateCardId = value;
-			Card = UpdateCard();
-		}
-	}
-
-
-
-
-	//"56ebc372-aabd-4174-a943-c7bf59e5028d";
+	[Property, ReadOnly]
 	public Card Card { get; private set; }
 
-	// Composite
-
-
-	[RequireComponent] public CardRenderer CardRenderer { get; private set; }
-	[RequireComponent] public PlaneCollider PlaneCollider { get; private set; }
-
-	// Ready signal
-	private readonly AsyncGate _readyGate = new();
-	public Task WhenReady => _readyGate.WhenReady;
-	public bool IsReady => _readyGate.IsSucceeded;
-	public bool HasFailed => _readyGate.IsFailed;
-	public Exception Error => _readyGate.Error;
+	private CardIndexSystem IndexSystem => Scene.GetSystem<CardIndexSystem>();
 
 	protected override async Task OnLoad()
 	{
-		// Run initialization through the gate for proper state tracking
-		await _readyGate.RunAsync( InitializeAsync );
-	}
-
-	private async Task InitializeAsync()
-	{
-		IndexSystem = Scene.GetSystem<CardIndexSystem>();
+		// Wait once for system to be ready
 		await IndexSystem.WhenReady;
 
-		if ( !IndexSystem.IsReady )
-		{
-			throw new Exception( "CardIndexSystem not ready after WhenReady" );
-		}
-
-		Card = IndexSystem.GetCard( CardID );
-		if ( Card is null )
-		{
-			throw new Exception( $"Failed to find card '{CardID}' in index" );
-		}
-
-		Log.Info( $"[WorldCard] Loaded card: {Card.Name ?? CardID}" );
-	}
-
-	protected Card UpdateCard()
-	{
-		if ( IndexSystem is null ) { return null; }
-		if ( Card?.Id.ToString() != CardID )
-		{
-			Card = IndexSystem.GetCard( CardID );
-			CardRenderer.SetCard( Card );
-			return Card;
-		}
+		// Now all operations are synchronous
+		if ( !string.IsNullOrEmpty( ID ) )
+			UpdateCard( ID );
 		else
-		{
-			return Card;
-		}
-
+			SetRandomCard();
 	}
 
-
-	protected override void OnAwake()
+	private void OnIDChanged( string oldValue, string newValue )
 	{
-		// Component awakening - runs before OnLoad
+		// Only update if system is ready (avoid calls during initialization)
+		if ( IndexSystem.IsReady )
+			UpdateCard( newValue );
 	}
 
-	protected override void OnStart()
+	private void UpdateCard( string cardId )
 	{
-		// Component starting - runs after OnLoad completes
-		if ( !IsReady )
-		{
-			Log.Warning( $"[WorldCard] Started without being ready. Error: {Error?.Message}" );
-		}
+		Card = IndexSystem.GetCard( cardId ); // Throws if invalid
+		CardRenderer.Card = Card;
 	}
 
-	protected override void OnEnabled()
+	[Button( "Random Card" )]
+	public void SetRandomCard()
 	{
-		//var a = new Random();
-		//var b = IndexSystem.DefaultCardsDictionary.ElementAt( a.Next( 0, IndexSystem.DefaultCardsDictionary.Count - 1 ) ).Key;
-		//CardID = b.ToString();
-	}
-
-	protected override void OnDestroy()
-	{
-		CardRenderer?.Destroy();
-		PlaneCollider?.Destroy();
-	}
-
-	// ========== CONVENIENCE METHODS ==========
-
-	/// <summary>
-	/// Safely get card data only after ready.
-	/// </summary>
-	public async Task<Card> GetCardAsync()
-	{
-		await WhenReady;
-		if ( !IsReady || Card == null )
-		{
-			throw Error ?? new Exception( "WorldCard failed to load" );
-		}
-		return Card;
-	}
-
-	/// <summary>
-	/// Try to get card without throwing. Returns null if not ready.
-	/// </summary>
-	public Card TryGetCard()
-	{
-		return IsReady ? Card : null;
+		Card = IndexSystem.GetRandomCard();
+		ID = Card.Id.ToString();
+		CardRenderer.Card = Card;
 	}
 }
