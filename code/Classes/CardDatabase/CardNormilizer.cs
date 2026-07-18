@@ -27,9 +27,9 @@ public static class ScryfallCardNormalizer
 
 	private static Guid ParseRequiredGuid(string? value, string label)
 	{
-		if (!Guid.TryParse(value, out Guid result)) {
+		if (!Guid.TryParse(value, out Guid result))
 			throw new InvalidDataException($"Invalid {label}:  {value}");
-		}
+		
 		return result;
 	}
 
@@ -37,9 +37,8 @@ public static class ScryfallCardNormalizer
 		if ( string.IsNullOrWhiteSpace( value ) )
 			return null;
 
-		if ( !Guid.TryParse( value, out Guid result ) ) {
+		if ( !Guid.TryParse( value, out Guid result ) )
 			throw new InvalidDataException($"Invalid {fieldName}: '{value}'");
-		}
 
 		return result;
 	}

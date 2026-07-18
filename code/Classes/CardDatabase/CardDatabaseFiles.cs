@@ -13,13 +13,6 @@ internal static class CardDatabaseFiles
 
 	public const int CurrentFormatVersion = 1;
 
-	public static readonly JsonSerializerOptions ImportJsonOptions = new()
-	{
-		PropertyNameCaseInsensitive = true
-	};
-
-	public static readonly JsonSerializerOptions DatabaseJsonOptions = new()
-	{
-		WriteIndented = false
-	};
+	public static readonly JsonSerializerOptions ImportJsonOptions = new() { PropertyNameCaseInsensitive = true };
+	public static readonly JsonSerializerOptions DatabaseJsonOptions = new() { WriteIndented = false };
 }

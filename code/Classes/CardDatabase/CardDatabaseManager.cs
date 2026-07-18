@@ -21,22 +21,15 @@ public class CardDatabaseManager : GameObjectSystem<CardDatabaseManager>, IScene
 		
 		// HARNEESS
 		CardDatabase.Initialize();
-		Guid testId = Guid.Parse(
-			"a471b306-4941-4e46-a0cb-d92895c16f8a"
-		);
+		Guid testId = Guid.Parse("a471b306-4941-4e46-a0cb-d92895c16f8a");
 
 		CardDefinition? card = CardDatabase.GetCard( testId );
 		
 		if ( card is null )
-		{
 			Log.Error( "Card was not found." );
-		}
 		else
-		{
-			Log.Info(
-				$"Loaded card: {card.Name} ({card.ScryfallId})"
-			);
-		}
+			Log.Info($"Loaded card: {card.Name} ({card.ScryfallId})");
+		
 		CardDatabase.Shutdown();
 	}
 	
