@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
-using Sandbox.Classes.CardDatabase.Models;
 
 namespace Sandbox.Classes.CardDatabase;
 
@@ -27,64 +26,39 @@ public static class CardDatabaseBuilder
 		);
 
 		List<CardIndexEntry> indexEntries = [];
+		List<CardIdMapping> idMappings = [];
 		HashSet<Guid> encounteredIds = [];
-
 		int processedCount = 0;
 
-		JsonArrayReader.ReadObjects<Models.ScryfallCardDto>(
+		JsonArrayReader.ReadObjects<ScryfallCardDto>(
 			input,
 			(dto, arrayIndex) =>
 			{
-				CardDefinition cardDefinition;
-
-				try
-				{
-					cardDefinition = ScryfallCardNormalizer.Normalize( dto );
-				}
-				catch ( Exception exception )
-				{
-					throw new InvalidDataException(
-						$"Failed to process card at array index {arrayIndex}.",
-						exception
-					);
-				}
-
-				if ( !encounteredIds.Add( cardDefinition.ScryfallId ) )
-				{
-					throw new InvalidDataException(
-						$"Duplicate Scryfall ID found during import: " +
-						$"{cardDefinition.ScryfallId}"
-					);
-				}
-
+				CardDefinition definition = ScryfallCardNormalizer.Normalize(dto);
+				
 				byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(
-					cardDefinition,
+					definition,
 					CardDatabaseFiles.DatabaseJsonOptions
 				);
 
 				long offset = output.Position;
+				output.Write(bytes, 0, bytes.Length);
 
-				output.Write(
-					bytes,
-					0,
-					bytes.Length
-				);
-
+				int recordId = indexEntries.Count;
+				
 				indexEntries.Add( new CardIndexEntry
 				{
-					ScryfallId = cardDefinition.ScryfallId,
 					Offset = offset,
 					Length = bytes.Length
 				} );
 
-				processedCount++;
-
-				if ( processedCount % 1000 == 0 )
+				idMappings.Add( new CardIdMapping()
 				{
-					Log.Info(
-						$"Processed {processedCount:N0} cards."
-					);
-				}
+					ScryfallId = definition.ScryfallId,
+					RecordId = recordId,
+				});
+				
+				processedCount++;
 			},
 			CardDatabaseFiles.ImportJsonOptions
 		);
@@ -94,8 +68,9 @@ public static class CardDatabaseBuilder
 		CardIndexFile indexFile = new()
 		{
 			FormatVersion = CardDatabaseFiles.CurrentFormatVersion,
-			CardCount = processedCount,
-			Cards = indexEntries
+			CardCount = indexEntries.Count,
+			Cards = indexEntries,
+			IdMappings =  idMappings,
 		};
 
 		WriteIndexFile( indexFile );

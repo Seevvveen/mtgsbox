@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using Sandbox.Classes.CardDatabase.Models;
 
 namespace Sandbox.Classes.CardDatabase;
 
@@ -9,7 +8,7 @@ namespace Sandbox.Classes.CardDatabase;
 //
 public static class ScryfallCardNormalizer
 {
-	public static CardDefinition Normalize( Models.ScryfallCardDto dto )
+	public static CardDefinition Normalize( ScryfallCardDto dto )
 	{
 		ArgumentNullException.ThrowIfNull( dto );
 

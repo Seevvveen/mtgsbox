@@ -1,8 +1,7 @@
 ﻿using System;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Sandbox.Classes.CardDatabase.Models;
+namespace Sandbox.Classes.CardDatabase;
 
 //What I choose to capture from scryfall
 public sealed record ScryfallCardDto
@@ -34,9 +33,14 @@ public sealed record CardDefinition
 /// </summary>
 public readonly record struct CardIndexEntry
 {
-	public Guid ScryfallId { get; init; }
 	public long Offset { get; init; }
 	public int Length { get; init; }
+}
+
+public readonly record struct CardIdMapping
+{
+	public Guid ScryfallId { get; init; }
+	public int RecordId { get; init; }
 }
 
 /// <summary>
@@ -48,4 +52,5 @@ public sealed record CardIndexFile
 	public int CardCount { get; init; }
 
 	public List<CardIndexEntry> Cards { get; init; } = [];
+	public List<CardIdMapping> IdMappings { get; init; } = [];
 }
