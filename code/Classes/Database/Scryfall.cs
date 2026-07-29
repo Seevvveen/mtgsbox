@@ -1,88 +1,207 @@
-﻿using System;
+#nullable enable
+
+using Sandbox.Classes.CardDatabase;
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+
 namespace Sandbox.Classes.Database;
 
-
-public class Scryfall
+public sealed class Scryfall
 {
 	private const string Api = "https://api.scryfall.com";
-	public static Scryfall Client = new();
+	private const string CardMetaFile = "oracle-meta.txt";
+	private const string RulingsMetaFile = "rulings-meta.txt";
 
-	private struct Bulk
+	public static Scryfall Client { get; } = new();
+
+	private sealed class BulkDataDto
 	{
-		[JsonPropertyName("object")] public string Object { get; set; }
-		public string id { get; set; }
-		public string type { get; set; }
-		public DateTime updated_at { get; set; }
-		public string name { get; set; }
-		public string description { get; set; }
-		public long size { get; set; }
-		public string jsonl_download_uri{ get; set; }
-		public string content_type { get; set; }
-		public string content_encoding { get; set; }
+		[JsonPropertyName( "object" )]
+		public string Object { get; set; } = "";
+
+		[JsonPropertyName( "id" )]
+		public string Id { get; set; } = "";
+
+		[JsonPropertyName( "type" )]
+		public string Type { get; set; } = "";
+
+		[JsonPropertyName( "updated_at" )]
+		public DateTimeOffset UpdatedAt { get; set; }
+
+		[JsonPropertyName( "name" )]
+		public string Name { get; set; } = "";
+
+		[JsonPropertyName( "description" )]
+		public string Description { get; set; } = "";
+
+		[JsonPropertyName( "compressed_size" )]
+		public long CompressedSize { get; set; }
+
+		[JsonPropertyName( "jsonl_download_uri" )]
+		public string JsonlDownloadUri { get; set; } = "";
+
+		[JsonPropertyName( "content_type" )]
+		public string? ContentType { get; set; }
+
+		[JsonPropertyName( "content_encoding" )]
+		public string? ContentEncoding { get; set; }
 	}
 
-	
-	private const string MetaFile = "oracle-meta.txt";
-	private const string DataFile = "oracle-cards.json";
-	
-	private DateTime? GetLocalUpdatedAt()
+	public Task UpdateBulk()
 	{
-		if (!FileSystem.Data.FileExists(MetaFile))
+		return UpdateBulkFile(
+			"oracle-cards",
+			DatabaseFileInfo.SourceFile,
+			CardMetaFile );
+	}
+
+	public Task UpdateRulings()
+	{
+		return UpdateBulkFile(
+			"rulings",
+			DatabaseFileInfo.RulingsSourceFile,
+			RulingsMetaFile );
+	}
+
+	public Task UpdateSets()
+	{
+		return DownloadApiFile(
+			$"{Api}/sets",
+			DatabaseFileInfo.SetSourceFile );
+	}
+
+	public Task UpdateSymbology()
+	{
+		return DownloadApiFile(
+			$"{Api}/symbology",
+			DatabaseFileInfo.SymbolSourceFile );
+	}
+
+	private static async Task UpdateBulkFile(
+		string bulkType,
+		string destinationFile,
+		string metadataFile )
+	{
+		Dictionary<string, string> headers = CreateHeaders();
+
+		BulkDataDto response =
+			await Http.RequestJsonAsync<BulkDataDto>(
+				requestUri: $"{Api}/bulk-data/{bulkType}",
+				method: "GET",
+				content: null,
+				headers: headers,
+				cancellationToken: CancellationToken.None );
+
+		if ( !string.Equals(
+			response.Object,
+			"bulk_data",
+			StringComparison.Ordinal ) )
+		{
+			throw new InvalidDataException(
+				$"Expected a Scryfall bulk_data object for " +
+				$"'{bulkType}', received '{response.Object}'." );
+		}
+
+		if ( !string.Equals(
+			response.Type,
+			bulkType.Replace( "-", "_" ),
+			StringComparison.Ordinal ) )
+		{
+			throw new InvalidDataException(
+				$"Scryfall returned bulk type '{response.Type}' for " +
+				$"requested type '{bulkType}'." );
+		}
+
+		if ( string.IsNullOrWhiteSpace(
+			response.JsonlDownloadUri ) )
+		{
+			throw new InvalidDataException(
+				$"Scryfall bulk type '{bulkType}' has no download URI." );
+		}
+
+		DateTimeOffset? localUpdated =
+			GetLocalUpdatedAt( metadataFile );
+
+		if (
+			localUpdated.HasValue &&
+			localUpdated.Value >= response.UpdatedAt &&
+			FileSystem.Data.FileExists( destinationFile )
+		)
+		{
+			return;
+		}
+
+		byte[] data = await Http.RequestBytesAsync(
+			requestUri: response.JsonlDownloadUri,
+			method: "GET",
+			content: null,
+			headers: headers,
+			cancellationToken: CancellationToken.None );
+
+		WriteDataFile( destinationFile, data );
+		SaveLocalUpdatedAt( metadataFile, response.UpdatedAt );
+	}
+
+	private static async Task DownloadApiFile(
+		string requestUri,
+		string destinationFile )
+	{
+		byte[] data = await Http.RequestBytesAsync(
+			requestUri: requestUri,
+			method: "GET",
+			content: null,
+			headers: CreateHeaders(),
+			cancellationToken: CancellationToken.None );
+
+		WriteDataFile( destinationFile, data );
+	}
+
+	private static DateTimeOffset? GetLocalUpdatedAt(
+		string metadataFile )
+	{
+		if ( !FileSystem.Data.FileExists( metadataFile ) )
 			return null;
 
-		var text = FileSystem.Data.ReadAllText(MetaFile);
-		if (DateTime.TryParse(text, out var dt))
-			return dt;
+		string text = FileSystem.Data.ReadAllText( metadataFile );
 
-		return null;
+		return DateTimeOffset.TryParse(
+			text,
+			out DateTimeOffset result )
+			? result
+			: null;
 	}
-	
-	private void SaveLocalUpdatedAt(DateTime time)
+
+	private static void SaveLocalUpdatedAt(
+		string metadataFile,
+		DateTimeOffset time )
 	{
-		FileSystem.Data.WriteAllText(MetaFile, time.ToString("O"));
+		FileSystem.Data.WriteAllText(
+			metadataFile,
+			time.ToString( "O" ) );
 	}
-	
-	public async Task UpdateBulk()
+
+	private static void WriteDataFile(
+		string destinationFile,
+		byte[] data )
 	{
-		var headers = new Dictionary<string, string>
-		{
-			["Accept"] = "application/json"
-		};
+		using Stream fileStream = FileSystem.Data.OpenWrite(
+			destinationFile,
+			FileMode.Create );
 
-		Bulk resp = await Http.RequestJsonAsync<Bulk>(
-			requestUri: "https://api.scryfall.com/bulk-data/oracle-cards",
-			method: "GET",
-			content: null,
-			headers: headers,
-			cancellationToken: CancellationToken.None
-		);
-
-		var localUpdated = GetLocalUpdatedAt();
-
-		
-		
-		// If we already have this version, do nothing
-		if (localUpdated.HasValue && localUpdated.Value >= resp.updated_at)
-			return;
-		
-		// Download new bulk data
-		byte[] data = await Http.RequestBytesAsync(
-			requestUri: resp.jsonl_download_uri,
-			method: "GET",
-			content: null,
-			headers: headers,
-			cancellationToken: CancellationToken.None
-		);
-
-		using Stream fileStream = FileSystem.Data.OpenWrite( DataFile,FileMode.Create);
-
-		fileStream.Write(data, 0, data.Length);
+		fileStream.Write( data, 0, data.Length );
 		fileStream.Flush();
+	}
 
-		SaveLocalUpdatedAt(resp.updated_at);
+	private static Dictionary<string, string> CreateHeaders()
+	{
+		return new Dictionary<string, string>
+		{
+			["Accept"] = "application/json",
+			//["User-Agent"] = "mtgsbox/1.0" - Not Allowed to set user agent in sbox
+		};
 	}
 }

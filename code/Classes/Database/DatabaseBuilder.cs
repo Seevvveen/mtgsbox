@@ -1,4 +1,7 @@
 ﻿using Sandbox.Classes.CardDatabase;
+#nullable enable
+
+using Sandbox.Classes.Cards.ManaSymbols;
 using Sandbox.Classes.Database.Types;
 using System;
 using System.IO;
@@ -14,6 +17,12 @@ public static class DatabaseBuilder
 {
 	public static void BuildDatabase()
 	{
+		List<CardSymbolDefinition> symbolDefinitions =
+			ReadSymbolDefinitions();
+		List<CardSetDefinition> setDefinitions =
+			ReadSetDefinitions();
+		List<CardRuling> rulings = ReadRulings();
+
 		using Stream input =
 			FileSystem.Data.OpenRead( DatabaseFileInfo.SourceFile );
 
@@ -62,10 +71,195 @@ public static class DatabaseBuilder
 		};
 
 		WriteIndexFile( indexFile );
+		WriteSymbolDefinitionsFile( symbolDefinitions );
+		WriteSetDefinitionsFile( setDefinitions );
+		WriteRulingsFile( rulings );
 
 		Log.Info(
-			$"Database build complete. Stored {indexEntries.Count:N0} cards."
+			$"Database build complete. Stored {indexEntries.Count:N0} cards " +
+			$"{setDefinitions.Count:N0} sets, {rulings.Count:N0} rulings, " +
+			$"and {symbolDefinitions.Count:N0} symbol definitions."
 		);
+	}
+
+	private static List<CardSetDefinition> ReadSetDefinitions()
+	{
+		using Stream input =
+			FileSystem.Data.OpenRead( DatabaseFileInfo.SetSourceFile );
+
+		ScryfallListDto<ScryfallSetDto>? response =
+			JsonSerializer.Deserialize<
+				ScryfallListDto<ScryfallSetDto>>(
+					input,
+					DatabaseFileInfo.ImportJsonOptions );
+
+		if ( response is null )
+		{
+			throw new InvalidDataException(
+				"Could not deserialize the Scryfall sets response." );
+		}
+
+		if ( !string.Equals(
+			response.Object,
+			"list",
+			StringComparison.Ordinal ) )
+		{
+			throw new InvalidDataException(
+				$"Expected a Scryfall list response for sets, but " +
+				$"received '{response.Object}'." );
+		}
+
+		if ( response.HasMore )
+		{
+			throw new InvalidDataException(
+				"The Scryfall sets response unexpectedly has another " +
+				"page." );
+		}
+
+		if ( response.Data is not { Length: > 0 } sourceSets )
+		{
+			throw new InvalidDataException(
+				"The Scryfall sets response contains no definitions." );
+		}
+
+		var definitions =
+			new List<CardSetDefinition>( sourceSets.Length );
+		var ids = new HashSet<Guid>();
+		var codes = new HashSet<string>(
+			StringComparer.OrdinalIgnoreCase );
+
+		for ( var index = 0; index < sourceSets.Length; index++ )
+		{
+			CardSetDefinition definition =
+				ScryfallSupplementalNormalizer.NormalizeSet(
+					sourceSets[index] );
+
+			if ( !string.Equals(
+				definition.Object,
+				"set",
+				StringComparison.Ordinal ) )
+			{
+				throw new InvalidDataException(
+					$"Set at data index {index} has object type " +
+					$"'{definition.Object}'." );
+			}
+
+			if ( !ids.Add( definition.Id ) )
+			{
+				throw new InvalidDataException(
+					$"Duplicate Scryfall set ID '{definition.Id}'." );
+			}
+
+			if ( !codes.Add( definition.Code ) )
+			{
+				throw new InvalidDataException(
+					$"Duplicate Scryfall set code '{definition.Code}'." );
+			}
+
+			definitions.Add( definition );
+		}
+
+		return definitions;
+	}
+
+	private static List<CardRuling> ReadRulings()
+	{
+		using Stream input =
+			FileSystem.Data.OpenRead(
+				DatabaseFileInfo.RulingsSourceFile );
+
+		var rulings = new List<CardRuling>();
+
+		ReadJsonLines<ScryfallRulingDto>(
+			input,
+			(dto, index) =>
+			{
+				CardRuling ruling =
+					ScryfallSupplementalNormalizer.NormalizeRuling( dto );
+
+				if ( !string.Equals(
+					ruling.Object,
+					"ruling",
+					StringComparison.Ordinal ) )
+				{
+					throw new InvalidDataException(
+						$"Ruling at object index {index} has object " +
+						$"type '{ruling.Object}'." );
+				}
+
+				rulings.Add( ruling );
+			},
+			DatabaseFileInfo.ImportJsonOptions );
+
+		if ( rulings.Count == 0 )
+		{
+			throw new InvalidDataException(
+				"The Scryfall rulings bulk file contains no rulings." );
+		}
+
+		return rulings;
+	}
+
+	private static List<CardSymbolDefinition> ReadSymbolDefinitions()
+	{
+		using Stream input =
+			FileSystem.Data.OpenRead( DatabaseFileInfo.SymbolSourceFile );
+
+		ScryfallSymbologyDto? response =
+			JsonSerializer.Deserialize<ScryfallSymbologyDto>(
+				input,
+				DatabaseFileInfo.ImportJsonOptions );
+
+		if ( response is null )
+		{
+			throw new InvalidDataException(
+				"Could not deserialize the Scryfall symbology response." );
+		}
+
+		if ( !string.Equals(
+			response.Object,
+			"list",
+			StringComparison.Ordinal ) )
+		{
+			throw new InvalidDataException(
+				$"Expected a Scryfall list response, but received " +
+				$"'{response.Object}'." );
+		}
+
+		if ( response.HasMore )
+		{
+			throw new InvalidDataException(
+				"The Scryfall symbology response unexpectedly has " +
+				"another page." );
+		}
+
+		if ( response.Data is not { Length: > 0 } sourceDefinitions )
+		{
+			throw new InvalidDataException(
+				"The Scryfall symbology response contains no definitions." );
+		}
+
+		var definitions =
+			new List<CardSymbolDefinition>( sourceDefinitions.Length );
+		var identifiers = new HashSet<SymbolIdentifier>();
+
+		for ( var index = 0; index < sourceDefinitions.Length; index++ )
+		{
+			CardSymbolDefinition definition =
+				ScryfallSymbolNormalizer.Normalize(
+					sourceDefinitions[index] );
+
+			if ( !identifiers.Add( definition.Id ) )
+			{
+				throw new InvalidDataException(
+					$"Duplicate Scryfall symbol identifier " +
+					$"'{definition.Id}' at data index {index}." );
+			}
+
+			definitions.Add( definition );
+		}
+
+		return definitions;
 	}
 
 	private static void ReadJsonLines<T>(
@@ -159,6 +353,75 @@ public static class DatabaseBuilder
 		using Stream output = FileSystem.Data.OpenWrite(DatabaseFileInfo.CardIndexFile);
 		PrepareOutputStream(output, DatabaseFileInfo.CardIndexFile);
 		output.Write(bytes, 0, bytes.Length);
+		output.Flush();
+	}
+
+	private static void WriteSymbolDefinitionsFile(
+		List<CardSymbolDefinition> definitions )
+	{
+		CardSymbolDefinitionFile symbolFile = new()
+		{
+			FormatVersion = DatabaseFileInfo.CurrentFormatVersion,
+			SymbolCount = definitions.Count,
+			Symbols = definitions
+		};
+
+		byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(
+			symbolFile,
+			DatabaseFileInfo.DatabaseJsonOptions );
+
+		using Stream output =
+			FileSystem.Data.OpenWrite(
+				DatabaseFileInfo.SymbolDefinitionsFile );
+
+		PrepareOutputStream(
+			output,
+			DatabaseFileInfo.SymbolDefinitionsFile );
+
+		output.Write( bytes, 0, bytes.Length );
+		output.Flush();
+	}
+
+	private static void WriteSetDefinitionsFile(
+		List<CardSetDefinition> definitions )
+	{
+		WriteJsonFile(
+			DatabaseFileInfo.SetDefinitionsFile,
+			new CardSetDefinitionFile
+			{
+				FormatVersion =
+					DatabaseFileInfo.CurrentFormatVersion,
+				SetCount = definitions.Count,
+				Sets = definitions
+			} );
+	}
+
+	private static void WriteRulingsFile(
+		List<CardRuling> rulings )
+	{
+		WriteJsonFile(
+			DatabaseFileInfo.RulingsFile,
+			new CardRulingFile
+			{
+				FormatVersion =
+					DatabaseFileInfo.CurrentFormatVersion,
+				RulingCount = rulings.Count,
+				Rulings = rulings
+			} );
+	}
+
+	private static void WriteJsonFile<T>(
+		string fileName,
+		T value )
+	{
+		using Stream output = FileSystem.Data.OpenWrite( fileName );
+		PrepareOutputStream( output, fileName );
+
+		JsonSerializer.Serialize(
+			output,
+			value,
+			DatabaseFileInfo.DatabaseJsonOptions );
+
 		output.Flush();
 	}
 

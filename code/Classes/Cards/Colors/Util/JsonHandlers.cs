@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 namespace Sandbox.Classes.Cards.Colors.Util;
@@ -86,12 +87,52 @@ public sealed class ProducedManaSetJsonConverter : JsonConverter<ProducedManaSet
 {
 	public override ProducedManaSet Read( ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options )
 	{
-		return ScryfallSetJsonReader.ReadArray(
-			ref reader,
-			ProducedManaSet.Empty,
-			ProducedManaSet.FromScryfallSymbol,
-			(current, next) => current.Union( next ),
-			nameof( ProducedManaSet ) );
+		if ( reader.TokenType != JsonTokenType.StartArray )
+		{
+			throw new JsonException(
+				$"Expected a JSON array for {nameof( ProducedManaSet )}." );
+		}
+
+		var values = new List<string>();
+
+		while ( reader.Read() )
+		{
+			if ( reader.TokenType == JsonTokenType.EndArray )
+			{
+				try
+				{
+					return ProducedManaSet.FromScryfall(
+						values.ToArray() );
+				}
+				catch ( ArgumentException exception )
+				{
+					throw new JsonException(
+						exception.Message,
+						exception );
+				}
+				catch ( FormatException exception )
+				{
+					throw new JsonException(
+						exception.Message,
+						exception );
+				}
+			}
+
+			if ( reader.TokenType != JsonTokenType.String )
+			{
+				throw new JsonException(
+					$"{nameof( ProducedManaSet )} entries must be strings." );
+			}
+
+			values.Add(
+				reader.GetString()
+				?? throw new JsonException(
+					$"{nameof( ProducedManaSet )} entries cannot be null." ) );
+		}
+
+		throw new JsonException(
+			"Unexpected end of JSON while reading " +
+			$"{nameof( ProducedManaSet )}." );
 	}
 
 	public override void Write(

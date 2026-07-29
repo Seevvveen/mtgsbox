@@ -27,3 +27,24 @@ public sealed record CardIndexFile
 	public List<CardIndexEntry> Cards { get; init; } = [];
 	public List<CardIdMapping> IdMappings { get; init; } = [];
 }
+
+public sealed record CardSymbolDefinitionFile
+{
+	public int FormatVersion { get; init; }
+	public int SymbolCount { get; init; }
+	public List<CardSymbolDefinition> Symbols { get; init; } = [];
+}
+
+public sealed record CardSetDefinitionFile
+{
+	public int FormatVersion { get; init; }
+	public int SetCount { get; init; }
+	public List<CardSetDefinition> Sets { get; init; } = [];
+}
+
+public sealed record CardRulingFile
+{
+	public int FormatVersion { get; init; }
+	public int RulingCount { get; init; }
+	public List<CardRuling> Rulings { get; init; } = [];
+}

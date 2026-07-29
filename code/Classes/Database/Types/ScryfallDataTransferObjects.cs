@@ -1,6 +1,8 @@
 ﻿#nullable enable
 
 using System;
+using System.Collections.Generic;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Sandbox.Classes.CardDatabase;
@@ -128,7 +130,7 @@ public sealed class ScryfallCardDto
 	public int? MtgoFoilId { get; set; }
 
 	[JsonPropertyName( "multiverse_ids" )]
-	public int[] MultiverseIds { get; set; } = [];
+	public int[]? MultiverseIds { get; set; }
 
 	[JsonPropertyName( "tcgplayer_id" )]
 	public int? TcgplayerId { get; set; }
@@ -303,9 +305,14 @@ public string SetSearchUri { get; set; } = "";
 [JsonPropertyName( "scryfall_set_uri" )]
 public string ScryfallSetUri { get; set; } = "";
 
-[JsonPropertyName( "preview" )]
-public ScryfallPreviewDto? Preview { get; set; }
-	
+	[JsonPropertyName( "preview" )]
+	public ScryfallPreviewDto? Preview { get; set; }
+
+	/// <summary>
+	/// Retains fields introduced by Scryfall before this DTO is updated.
+	/// </summary>
+	[JsonExtensionData]
+	public Dictionary<string, JsonElement> AdditionalFields { get; set; } = [];
 }
 
 /// <summary>
@@ -384,6 +391,9 @@ public sealed class ScryfallCardFaceDto
 
 	[JsonPropertyName( "watermark" )]
 	public string? Watermark { get; set; }
+
+	[JsonExtensionData]
+	public Dictionary<string, JsonElement> AdditionalFields { get; set; } = [];
 }
 
 /// <summary>
@@ -408,6 +418,9 @@ public sealed class ScryfallRelatedCardDto
 
 	[JsonPropertyName( "uri" )]
 	public string Uri { get; set; } = "";
+
+	[JsonExtensionData]
+	public Dictionary<string, JsonElement> AdditionalFields { get; set; } = [];
 }
 
 /// <summary>
@@ -432,6 +445,24 @@ public sealed class ScryfallImageUrisDto
 
 	[JsonPropertyName( "border_crop" )]
 	public string? BorderCrop { get; set; }
+
+	[JsonPropertyName( "thumb" )]
+	public string? Thumb { get; set; }
+
+	[JsonPropertyName( "grid" )]
+	public string? Grid { get; set; }
+
+	[JsonPropertyName( "display" )]
+	public string? Display { get; set; }
+
+	[JsonPropertyName( "art" )]
+	public string? Art { get; set; }
+
+	[JsonPropertyName( "crop" )]
+	public string? Crop { get; set; }
+
+	[JsonExtensionData]
+	public Dictionary<string, JsonElement> AdditionalFields { get; set; } = [];
 }
 
 /// <summary>
@@ -459,6 +490,9 @@ public sealed class ScryfallPricesDto
 
 	[JsonPropertyName( "tix" )]
 	public string? Tix { get; set; }
+
+	[JsonExtensionData]
+	public Dictionary<string, JsonElement> AdditionalFields { get; set; } = [];
 }
 
 /// <summary>
@@ -474,4 +508,7 @@ public sealed class ScryfallPreviewDto
 
 	[JsonPropertyName( "source" )]
 	public string? Source { get; set; }
+
+	[JsonExtensionData]
+	public Dictionary<string, JsonElement> AdditionalFields { get; set; } = [];
 }

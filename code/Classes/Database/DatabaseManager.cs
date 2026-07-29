@@ -18,6 +18,9 @@ public class DatabaseManager : GameObjectSystem<DatabaseManager>, ISceneStartup
 	async void ISceneStartup.OnHostInitialize()
 	{
 		await Scryfall.Client.UpdateBulk();
+		await Scryfall.Client.UpdateRulings();
+		await Scryfall.Client.UpdateSets();
+		await Scryfall.Client.UpdateSymbology();
 		DatabaseBuilder.BuildDatabase();
 		
 		

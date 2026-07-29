@@ -1,5 +1,8 @@
 ﻿using System;
 
+using System.Text.Json.Serialization;
+using Sandbox.Classes.Cards.ManaSymbols.Util;
+
 namespace Sandbox.Classes.Cards.ManaSymbols;
 
 /// <summary>
@@ -10,6 +13,7 @@ namespace Sandbox.Classes.Cards.ManaSymbols;
 /// This type identifies a symbol. It does not claim that the symbol
 /// represents mana or that it is legal inside a mana cost.
 /// </summary>
+[JsonConverter( typeof(SymbolIdentifierJsonConverter) )]
 public readonly record struct SymbolIdentifier
 {
 	private readonly string? _value;
