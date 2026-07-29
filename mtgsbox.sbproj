@@ -1,7 +1,7 @@
 {
   "Title": "MTGsbox",
   "Type": "game",
-  "Org": "local",
+  "Org": "magikarp",
   "Ident": "mtgsbox",
   "Schema": 1,
   "IncludeSourceFiles": false,
@@ -24,6 +24,21 @@
     "LeaderboardType": "None",
     "CsProjName": "",
     "StartupScene": "scenes/startup.scene",
-    "LaunchMode": "Normal"
+    "LaunchMode": "Normal",
+    "Compiler": {
+      "RootNamespace": "Sandbox",
+      "DefineConstants": "SANDBOX",
+      "NoWarn": "1701;1702;1591;",
+      "WarningsAsErrors": "",
+      "TreatWarningsAsErrors": false,
+      "Nullables": false,
+      "ReleaseMode": "Debug",
+      "AssemblyReferences": [],
+      "ReplacementDirectives": {
+        ".Server.cs": "SERVER"
+      },
+      "IgnoreFolders": [],
+      "DistinctAssemblyReferences": []
+    }
   }
 }
