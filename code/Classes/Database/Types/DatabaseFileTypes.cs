@@ -1,32 +1,5 @@
 ﻿using System;
-using System.Text.Json.Serialization;
-
-namespace Sandbox.Classes.CardDatabase;
-
-//What I choose to capture from scryfall
-public sealed record ScryfallCardDto
-{
-	[JsonPropertyName( "id" )]
-	public string ScryfallId { get; init; } = "";
-
-	[JsonPropertyName( "oracle_id" )]
-	public string? OracleId { get; init; }
-
-	[JsonPropertyName( "name" )]
-	public string Name { get; init; } = "";
-}
-
-//A Normalized Card
-public sealed record CardDefinition
-{
-	public Guid ScryfallId { get; init; }
-	public Guid? OracleId { get; init; }
-	public string Name { get; init; } = "";
-}
-
-
-
-
+namespace Sandbox.Classes.Database.Types;
 
 /// <summary>
 /// Describes where one card is stored inside cards.dat.

@@ -1,0 +1,30 @@
+﻿namespace Sandbox.Classes.Cards.CardFrames;
+
+public enum FrameEffect
+{
+	Legendary,
+	Miracle,
+	Enchantment,
+	Draft,
+	Devoid,
+	Tombstone,
+	Colorshifted,
+	Inverted,
+	SunMoonDfc,
+	CompassLandDfc,
+	OriginPwDfc,
+	MoonEldraziDfc,
+	WaxingAndWaningMoonDfc,
+	Showcase,
+	ExtendedArt,
+	Companion,
+	Etched,
+	Snow,
+	Lesson,
+	ShatteredGlass,
+	ConvertDfc,
+	FanDfc,
+	UpsideDownDfc,
+	Spree,
+	Fullart,
+}

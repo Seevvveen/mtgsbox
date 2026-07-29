@@ -3,9 +3,7 @@ using System.IO;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
-using Sandbox.Clutter;
-
-namespace Sandbox.BulkCardStuff;
+namespace Sandbox.Classes.Database;
 
 
 public class Scryfall
@@ -13,7 +11,7 @@ public class Scryfall
 	private const string Api = "https://api.scryfall.com";
 	public static Scryfall Client = new();
 
-	public struct Bulk
+	private struct Bulk
 	{
 		[JsonPropertyName("object")] public string Object { get; set; }
 		public string id { get; set; }
@@ -22,7 +20,7 @@ public class Scryfall
 		public string name { get; set; }
 		public string description { get; set; }
 		public long size { get; set; }
-		public string download_uri{ get; set; }
+		public string jsonl_download_uri{ get; set; }
 		public string content_type { get; set; }
 		public string content_encoding { get; set; }
 	}
@@ -55,7 +53,7 @@ public class Scryfall
 			["Accept"] = "application/json"
 		};
 
-		var resp = await Http.RequestJsonAsync<Bulk>(
+		Bulk resp = await Http.RequestJsonAsync<Bulk>(
 			requestUri: "https://api.scryfall.com/bulk-data/oracle-cards",
 			method: "GET",
 			content: null,
@@ -65,23 +63,22 @@ public class Scryfall
 
 		var localUpdated = GetLocalUpdatedAt();
 
+		
+		
 		// If we already have this version, do nothing
 		if (localUpdated.HasValue && localUpdated.Value >= resp.updated_at)
 			return;
-
+		
 		// Download new bulk data
 		byte[] data = await Http.RequestBytesAsync(
-			requestUri: resp.download_uri,
+			requestUri: resp.jsonl_download_uri,
 			method: "GET",
 			content: null,
 			headers: headers,
 			cancellationToken: CancellationToken.None
 		);
 
-		using Stream fileStream =
-			FileSystem.Data.OpenWrite(
-				DataFile,
-				FileMode.Create);
+		using Stream fileStream = FileSystem.Data.OpenWrite( DataFile,FileMode.Create);
 
 		fileStream.Write(data, 0, data.Length);
 		fileStream.Flush();

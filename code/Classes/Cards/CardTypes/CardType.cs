@@ -1,0 +1,24 @@
+﻿namespace Sandbox.Classes.Cards.CardTypes;
+
+public enum CardType
+{
+	Artifact,
+	Battle,
+	Boss,
+	Conspiracy,
+	Creature,
+	Dungeon,
+	Emblem,
+	Enchantment,
+	Event,
+	Hero,
+	Instant,
+	Kindred,
+	Land,
+	Phenomenon,
+	Plane,
+	Planeswalker,
+	Scheme,
+	Sorcery,
+	Vanguard
+}
