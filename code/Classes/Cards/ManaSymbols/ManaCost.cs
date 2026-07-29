@@ -1,6 +1,6 @@
 ﻿using Sandbox.Classes.Cards.ManaSymbols.Util;
 using System;
-using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Text;
 using System.Text.Json.Serialization;
 
@@ -16,6 +16,7 @@ namespace Sandbox.Classes.Cards.ManaSymbols;
 public sealed class ManaCost : IEquatable<ManaCost>
 {
 	private readonly SymbolIdentifier[] _symbols;
+	private readonly ReadOnlyCollection<SymbolIdentifier> _symbolsView;
 	private readonly string _canonicalText;
 
 	/// <summary>
@@ -27,21 +28,47 @@ public sealed class ManaCost : IEquatable<ManaCost>
 	public static ManaCost None { get; } =
 		new( Array.Empty<SymbolIdentifier>() );
 
-	public IReadOnlyList<SymbolIdentifier> Symbols => _symbols;
+	/// <summary>
+	/// A read-only view of the symbols in printed order.
+	///
+	/// The backing array is not exposed, so callers cannot mutate this
+	/// ManaCost after its canonical text and hash identity are established.
+	/// </summary>
+	public IReadOnlyList<SymbolIdentifier> Symbols => _symbolsView;
 
 	public bool HasManaCost => _symbols.Length > 0;
 	public int SymbolCount => _symbols.Length;
+	public SymbolIdentifier this[int index] => _symbols[index];
 
 	private ManaCost( SymbolIdentifier[] symbols )
 	{
 		ArgumentNullException.ThrowIfNull( symbols );
 
-		_symbols = symbols;
+		if ( symbols.Length == 0 )
+		{
+			_symbols = Array.Empty<SymbolIdentifier>();
+		}
+		else
+		{
+			_symbols = new SymbolIdentifier[symbols.Length];
+			Array.Copy( symbols, _symbols, symbols.Length );
+		}
+
+		_symbolsView = Array.AsReadOnly( _symbols );
 
 		var text = new StringBuilder();
 
-		foreach ( var symbol in symbols )
+		foreach ( var symbol in _symbols )
+		{
+			if ( !symbol.IsValid )
+			{
+				throw new ArgumentException(
+					"A mana cost cannot contain an uninitialized symbol.",
+					nameof( symbols ) );
+			}
+
 			text.Append( symbol );
+		}
 
 		_canonicalText = text.ToString();
 	}

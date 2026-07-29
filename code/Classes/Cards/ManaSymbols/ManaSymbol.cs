@@ -11,8 +11,14 @@ namespace Sandbox.Classes.Cards.ManaSymbols;
 /// </summary>
 public readonly record struct ManaSymbol
 {
-	public string Code { get; }
+	private readonly string? _code;
+
+	public string Code =>
+		_code ?? throw new InvalidOperationException(
+			"An uninitialized ManaSymbol has no code." );
+
 	public ManaSymbolKind Kind { get; }
+	public bool IsValid => _code is not null;
 
 	/// <summary>
 	/// Colors represented by this symbol.
@@ -38,7 +44,7 @@ public readonly record struct ManaSymbol
 		ColorSet colors,
 		int genericAmount = 0 )
 	{
-		Code = code;
+		_code = code;
 		Kind = kind;
 		Colors = colors;
 		GenericAmount = genericAmount;
@@ -51,10 +57,66 @@ public readonly record struct ManaSymbol
 
 	public override string ToString()
 	{
-		return $"{{{Code}}}";
+		return _code is null ? "" : $"{{{_code}}}";
 	}
 
-	internal static ManaSymbol Parse( string value )
+	/// <summary>
+	/// Resolves a syntactically valid identifier into one of the mana-symbol
+	/// forms understood by the rules implementation.
+	///
+	/// A SymbolIdentifier may be valid without being a mana symbol. For
+	/// example, {T} and {D} should remain valid identifiers but this method
+	/// rejects them as mana symbols.
+	/// </summary>
+	public static ManaSymbol Parse( SymbolIdentifier identifier )
+	{
+		if ( !identifier.IsValid )
+		{
+			throw new ArgumentException(
+				"Cannot parse an uninitialized symbol identifier.",
+				nameof( identifier ) );
+		}
+
+		return ParseCode( identifier.Code );
+	}
+
+	/// <summary>
+	/// Resolves either a loose code such as W/U or a canonical identifier
+	/// such as {W/U}.
+	/// </summary>
+	public static ManaSymbol Parse( string value )
+	{
+		return Parse( SymbolIdentifier.Parse( value ) );
+	}
+
+	public static bool TryParse(
+		string? value,
+		out ManaSymbol symbol )
+	{
+		if ( string.IsNullOrWhiteSpace( value ) )
+		{
+			symbol = default;
+			return false;
+		}
+
+		try
+		{
+			symbol = Parse( value );
+			return true;
+		}
+		catch ( ArgumentException )
+		{
+			symbol = default;
+			return false;
+		}
+		catch ( FormatException )
+		{
+			symbol = default;
+			return false;
+		}
+	}
+
+	private static ManaSymbol ParseCode( string value )
 	{
 		ArgumentNullException.ThrowIfNull( value );
 

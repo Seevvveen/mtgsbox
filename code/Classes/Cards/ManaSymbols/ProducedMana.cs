@@ -2,6 +2,7 @@
 using Sandbox.Classes.Cards.ManaSymbols;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;
 
 namespace Sandbox.Classes.Cards.Colors;
@@ -19,12 +20,21 @@ namespace Sandbox.Classes.Cards.Colors;
 [JsonConverter( typeof(ProducedManaSetJsonConverter) )]
 public readonly struct ProducedManaSet : IEquatable<ProducedManaSet>
 {
-	public IReadOnlyList<SymbolIdentifier> Symbols => Values;
-	
-	private readonly SymbolIdentifier[] _symbols;
+	private static readonly ReadOnlyCollection<SymbolIdentifier>
+		EmptySymbolsView = Array.AsReadOnly(
+			Array.Empty<SymbolIdentifier>() );
+
+	private readonly SymbolIdentifier[]? _symbols;
+	private readonly ReadOnlyCollection<SymbolIdentifier>? _symbolsView;
 
 	private SymbolIdentifier[] Values =>
 		_symbols ?? Array.Empty<SymbolIdentifier>();
+
+	/// <summary>
+	/// A read-only view of the normalized Scryfall symbols.
+	/// </summary>
+	public IReadOnlyList<SymbolIdentifier> Symbols =>
+		_symbolsView ?? EmptySymbolsView;
 
 	public static ProducedManaSet Empty { get; } =
 		new( Array.Empty<SymbolIdentifier>() );
@@ -56,6 +66,7 @@ public readonly struct ProducedManaSet : IEquatable<ProducedManaSet>
 		ArgumentNullException.ThrowIfNull( symbols );
 
 		_symbols = Normalize( symbols );
+		_symbolsView = Array.AsReadOnly( _symbols );
 	}
 
 	public static ProducedManaSet FromSymbol(
@@ -325,6 +336,14 @@ public readonly struct ProducedManaSet : IEquatable<ProducedManaSet>
 
 		foreach ( var symbol in symbols )
 		{
+			if ( !symbol.IsValid )
+			{
+				throw new ArgumentException(
+					"A produced-mana set cannot contain an " +
+					"uninitialized symbol.",
+					nameof( symbols ) );
+			}
+
 			if ( !Contains( result, symbol ) )
 				result.Add( symbol );
 		}

@@ -8,5 +8,4 @@ public enum ManaType : byte
 	Red,
 	Green,
 	Colorless,
-	Tap,
 }
