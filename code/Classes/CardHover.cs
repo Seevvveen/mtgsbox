@@ -69,6 +69,16 @@ public sealed class CardHover : Component
 			return;
 		}
 
+		InWorldActionButton? action = ActionUnder( ray );
+
+		if ( action is not null &&
+			Input.Pressed( "attack1" ) )
+		{
+			SetHovered( null );
+			action.Invoke();
+			return;
+		}
+
 		SetHovered( CardUnder( ray ) );
 
 		if ( Input.Pressed( "attack1" ) &&
@@ -232,6 +242,23 @@ public sealed class CardHover : Component
 
 			if ( card is not null )
 				return card;
+		}
+
+		return null;
+	}
+
+	private InWorldActionButton? ActionUnder( Ray ray )
+	{
+		foreach ( SceneTraceResult hit in Scene.Trace
+			.Ray( ray, TraceDistance )
+			.RunAll() )
+		{
+			InWorldActionButton? action =
+				hit.GameObject?.Components
+					.Get<InWorldActionButton>();
+
+			if ( action is not null )
+				return action;
 		}
 
 		return null;

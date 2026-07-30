@@ -120,6 +120,7 @@ public sealed class CardObject : Component
 
 		_renderer = GetOrAddComponent<ModelRenderer>();
 		_renderer.Model = CardMesh.Shared;
+		GetOrAddComponent<CardValueIndicators>();
 		BeginVisualRefresh();
 	}
 
@@ -184,6 +185,12 @@ public sealed class CardObject : Component
 	/// </summary>
 	public void FlipPrintedFace()
 	{
+		if ( GameObject.Network.IsProxy )
+		{
+			FlipPrintedFaceOwner();
+			return;
+		}
+
 		if ( RevealedPrintingId == Guid.Empty )
 			throw new InvalidOperationException(
 				"A concealed card cannot transform publicly." );
@@ -192,6 +199,9 @@ public sealed class CardObject : Component
 
 		FaceIndex = FaceIndex == 1 ? 0 : 1;
 	}
+
+	[Rpc.Owner]
+	private void FlipPrintedFaceOwner() => FlipPrintedFace();
 
 	private static void RequirePrintedBack( Guid printingId )
 	{

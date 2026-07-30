@@ -281,6 +281,9 @@ public sealed class ZoneObject : Component
 		if ( Application.IsHeadless )
 			return;
 
+		// Counts are useful even when a game hides the decorative zone marker.
+		GetOrAddComponent<ZoneCountIndicator>();
+
 		if ( !ShowMarker )
 		{
 			if ( _markerRenderer is not null )
