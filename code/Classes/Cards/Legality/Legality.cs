@@ -2,8 +2,8 @@
 
 public enum CardLegality
 {
-	NotLegal,
-	Legal,
-	Restricted,
-	Banned
+	NotLegal = 0,
+	Legal = 1,
+	Restricted = 2,
+	Banned = 3
 }

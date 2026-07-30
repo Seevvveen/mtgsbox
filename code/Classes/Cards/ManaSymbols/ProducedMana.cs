@@ -7,6 +7,8 @@ using System.Text.Json.Serialization;
 
 namespace Sandbox.Classes.Cards.Colors;
 
+#nullable enable
+
 /// <summary>
 /// An immutable set of symbols reported by Scryfall's produced_mana field.
 ///

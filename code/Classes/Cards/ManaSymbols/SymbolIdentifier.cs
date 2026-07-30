@@ -5,6 +5,8 @@ using Sandbox.Classes.Cards.ManaSymbols.Util;
 
 namespace Sandbox.Classes.Cards.ManaSymbols;
 
+#nullable enable
+
 /// <summary>
 /// The canonical identifier for exactly one Scryfall symbol.
 ///

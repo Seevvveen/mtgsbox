@@ -6,6 +6,8 @@ using System.Text.Json.Serialization;
 
 namespace Sandbox.Classes.Cards.ManaSymbols;
 
+#nullable enable
+
 /// <summary>
 /// An ordered mana cost for one card face.
 ///

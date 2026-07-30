@@ -4,6 +4,8 @@ using System.Numerics;
 using System.Text.Json.Serialization;
 namespace Sandbox.Classes.Cards.Colors;
 
+#nullable enable
+
 /// <summary>
 /// An immutable set containing zero or more of Magic's five colors.
 ///

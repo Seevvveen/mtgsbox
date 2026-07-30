@@ -1,12 +1,16 @@
 ﻿using Sandbox.Classes.CardDatabase;
 #nullable enable
 
+using Sandbox.Classes.Cards;
+using Sandbox.Classes.Cards.CardFrames;
+using Sandbox.Classes.Cards.Legality;
 using Sandbox.Classes.Cards.ManaSymbols;
 using Sandbox.Classes.Database.Types;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using System.Threading;
 
 namespace Sandbox.Classes.Database;
 
@@ -15,30 +19,49 @@ namespace Sandbox.Classes.Database;
 /// </summary>
 public static class CardDatabase
 {
-	private static readonly Dictionary<Guid, int> RecordIdByScryfallId = [];
-	private static readonly Dictionary<
-		SymbolIdentifier,
-		CardSymbolDefinition> SymbolDefinitionById = [];
-	private static readonly Dictionary<Guid, CardSetDefinition>
-		SetDefinitionById = [];
-	private static readonly Dictionary<string, CardSetDefinition>
-		SetDefinitionByCode =
-			new( StringComparer.OrdinalIgnoreCase );
-	private static readonly Dictionary<Guid, List<CardRuling>>
-		RulingsByOracleId = [];
-	private static CardIndexEntry[] Entries = [];
-	private static int LoadedRulingCount;
+	private sealed class DatabaseState : IDisposable
+	{
+		public required int FormatVersion { get; init; }
+		public required Stream CardDataStream { get; init; }
+		public required CardIndexEntry[] Entries { get; init; }
+		public required Dictionary<Guid, int> RecordIdByScryfallId { get; init; }
+		public required Dictionary<SymbolIdentifier, CardSymbolDefinition>
+			SymbolDefinitionById { get; init; }
+		public required Dictionary<Guid, CardSetDefinition>
+			SetDefinitionById { get; init; }
+		public required Dictionary<string, CardSetDefinition>
+			SetDefinitionByCode { get; init; }
+		public required Dictionary<Guid, List<CardRuling>>
+			RulingsByOracleId { get; init; }
+		public required int RulingCount { get; init; }
 
-	private static readonly object StreamLock = new();
+		public void Dispose()
+		{
+			CardDataStream.Dispose();
+		}
+	}
 
-	private static Stream? _cardDataStream;
+	private sealed class DatabaseLease : IDisposable
+	{
+		private int _disposed;
+
+		public void Dispose()
+		{
+			if ( Interlocked.Exchange( ref _disposed, 1 ) == 0 )
+				ReleaseLease();
+		}
+	}
+
+	private static readonly object StateLock = new();
+	private static DatabaseState? _state;
+	private static int _leaseCount;
 
 	public static bool IsOpen
 	{
 		get
 		{
-			lock ( StreamLock )
-				return _cardDataStream is not null;
+			lock ( StateLock )
+				return _state is not null;
 		}
 	}
 
@@ -46,8 +69,8 @@ public static class CardDatabase
 	{
 		get
 		{
-			lock ( StreamLock )
-				return Entries.Length;
+			lock ( StateLock )
+				return _state?.Entries.Length ?? 0;
 		}
 	}
 
@@ -55,8 +78,8 @@ public static class CardDatabase
 	{
 		get
 		{
-			lock ( StreamLock )
-				return SymbolDefinitionById.Count;
+			lock ( StateLock )
+				return _state?.SymbolDefinitionById.Count ?? 0;
 		}
 	}
 
@@ -64,8 +87,8 @@ public static class CardDatabase
 	{
 		get
 		{
-			lock ( StreamLock )
-				return SetDefinitionById.Count;
+			lock ( StateLock )
+				return _state?.SetDefinitionById.Count ?? 0;
 		}
 	}
 
@@ -73,8 +96,25 @@ public static class CardDatabase
 	{
 		get
 		{
-			lock ( StreamLock )
-				return LoadedRulingCount;
+			lock ( StateLock )
+				return _state?.RulingCount ?? 0;
+		}
+	}
+
+	/// <summary>
+	/// Opens the database if necessary and keeps it open until the returned
+	/// lease is disposed. Scene systems should own a lease instead of
+	/// unconditionally shutting down process-wide database state.
+	/// </summary>
+	public static IDisposable Acquire()
+	{
+		lock ( StateLock )
+		{
+			if ( _state is null )
+				Initialize();
+
+			_leaseCount++;
+			return new DatabaseLease();
 		}
 	}
 
@@ -84,14 +124,22 @@ public static class CardDatabase
 	/// </summary>
 	public static void Initialize()
 	{
-		Shutdown();
-
 		CardIndexFile indexFile = ReadIndexFile();
 		CardSymbolDefinitionFile symbolFile =
 			ReadSymbolDefinitionFile();
 		CardSetDefinitionFile setFile =
 			ReadSetDefinitionFile();
 		CardRulingFile rulingFile = ReadRulingFile();
+
+		if ( symbolFile.FormatVersion != indexFile.FormatVersion ||
+			setFile.FormatVersion != indexFile.FormatVersion ||
+			rulingFile.FormatVersion != indexFile.FormatVersion )
+		{
+			throw new InvalidDataException(
+				"Card database artifacts come from different format " +
+				"generations."
+			);
+		}
 
 		if ( indexFile.Cards.Count != indexFile.CardCount )
 		{
@@ -111,6 +159,7 @@ public static class CardDatabase
 
 		// The array position is the database-local record ID.
 		CardIndexEntry[] loadedEntries = new CardIndexEntry[indexFile.Cards.Count];
+		long expectedDataLength = 0;
 
 		for ( int i = 0; i < indexFile.Cards.Count; i++ )
 		{
@@ -130,7 +179,32 @@ public static class CardDatabase
 				);
 			}
 
+			if ( entry.Length > DatabaseFileInfo.MaxCardRecordBytes )
+			{
+				throw new InvalidDataException(
+					$"Record {i} is {entry.Length} bytes; the maximum is " +
+					$"{DatabaseFileInfo.MaxCardRecordBytes} bytes."
+				);
+			}
+
+			if ( entry.Offset != expectedDataLength )
+			{
+				throw new InvalidDataException(
+					$"Record {i} begins at byte {entry.Offset}, but the " +
+					$"next contiguous record must begin at byte " +
+					$"{expectedDataLength}."
+				);
+			}
+
+			if ( expectedDataLength > long.MaxValue - entry.Length )
+			{
+				throw new InvalidDataException(
+					$"Record {i} would overflow the database byte range."
+				);
+			}
+
 			loadedEntries[i] = entry;
+			expectedDataLength += entry.Length;
 		}
 
 		Dictionary<Guid, int> loadedMappings = new( indexFile.CardCount );
@@ -138,6 +212,13 @@ public static class CardDatabase
 
 		foreach ( CardIdMapping mapping in indexFile.IdMappings )
 		{
+			if ( mapping.ScryfallId == Guid.Empty )
+			{
+				throw new InvalidDataException(
+					"Card index contains an empty Scryfall ID."
+				);
+			}
+
 			if ( mapping.RecordId < 0 || mapping.RecordId >= loadedEntries.Length )
 			{
 				throw new InvalidDataException(
@@ -218,6 +299,18 @@ public static class CardDatabase
 
 		foreach ( CardSetDefinition definition in setFile.Sets )
 		{
+			if ( definition.Id == Guid.Empty )
+			{
+				throw new InvalidDataException(
+					"Set file contains an empty set ID." );
+			}
+
+			if ( string.IsNullOrWhiteSpace( definition.Code ) )
+			{
+				throw new InvalidDataException(
+					$"Set '{definition.Id}' has no set code." );
+			}
+
 			if ( !loadedSetsById.TryAdd(
 				definition.Id,
 				definition ) )
@@ -240,6 +333,12 @@ public static class CardDatabase
 
 		foreach ( CardRuling ruling in rulingFile.Rulings )
 		{
+			if ( ruling.OracleId == Guid.Empty )
+			{
+				throw new InvalidDataException(
+					"Ruling file contains an empty Oracle ID." );
+			}
+
 			if ( !loadedRulings.TryGetValue(
 				ruling.OracleId,
 				out List<CardRuling>? oracleRulings ) )
@@ -253,93 +352,62 @@ public static class CardDatabase
 			oracleRulings.Add( ruling );
 		}
 
-		Stream dataStream =
-			FileSystem.Data.OpenRead( DatabaseFileInfo.CardDataFile );
+		Stream? dataStream = null;
+		DatabaseState loadedState;
 
-		if ( !dataStream.CanSeek )
+		try
 		{
-			dataStream.Dispose();
+			dataStream =
+				FileSystem.Data.OpenRead( DatabaseFileInfo.CardDataFile );
 
-			throw new NotSupportedException(
-				$"'{DatabaseFileInfo.CardDataFile}' must support seeking."
-			);
-		}
-
-		for ( int recordId = 0; recordId < loadedEntries.Length; recordId++ )
-		{
-			CardIndexEntry entry = loadedEntries[recordId];
-
-			// Avoid unchecked overflow from Offset + Length.
-			if ( entry.Offset > dataStream.Length - entry.Length )
+			if ( !dataStream.CanSeek )
 			{
-				dataStream.Dispose();
-
-				throw new InvalidDataException(
-					$"Record {recordId} at byte {entry.Offset} with length " +
-					$"{entry.Length} falls outside cards.dat, which is " +
-					$"{dataStream.Length} bytes."
+				throw new NotSupportedException(
+					$"'{DatabaseFileInfo.CardDataFile}' must support seeking."
 				);
 			}
-		}
 
-		lock ( StreamLock )
+			if ( dataStream.Length != expectedDataLength )
+			{
+				throw new InvalidDataException(
+					$"Card data is {dataStream.Length} bytes, but its " +
+					$"contiguous index describes {expectedDataLength} bytes."
+				);
+			}
+
+			loadedState = new DatabaseState
+			{
+				FormatVersion = indexFile.FormatVersion,
+				CardDataStream = dataStream,
+				Entries = loadedEntries,
+				RecordIdByScryfallId = loadedMappings,
+				SymbolDefinitionById = loadedSymbolDefinitions,
+				SetDefinitionById = loadedSetsById,
+				SetDefinitionByCode = loadedSetsByCode,
+				RulingsByOracleId = loadedRulings,
+				RulingCount = rulingFile.RulingCount
+			};
+
+			dataStream = null;
+		}
+		finally
 		{
-			_cardDataStream = dataStream;
-			Entries = loadedEntries;
-
-			RecordIdByScryfallId.Clear();
-
-			foreach ( KeyValuePair<Guid, int> mapping in loadedMappings )
-			{
-				RecordIdByScryfallId.Add( mapping.Key, mapping.Value );
-			}
-
-			SymbolDefinitionById.Clear();
-
-			foreach (
-				KeyValuePair<SymbolIdentifier, CardSymbolDefinition>
-					definition in loadedSymbolDefinitions )
-			{
-				SymbolDefinitionById.Add(
-					definition.Key,
-					definition.Value );
-			}
-
-			SetDefinitionById.Clear();
-			SetDefinitionByCode.Clear();
-
-			foreach (
-				KeyValuePair<Guid, CardSetDefinition> definition
-					in loadedSetsById )
-			{
-				SetDefinitionById.Add(
-					definition.Key,
-					definition.Value );
-			}
-
-			foreach (
-				KeyValuePair<string, CardSetDefinition> definition
-					in loadedSetsByCode )
-			{
-				SetDefinitionByCode.Add(
-					definition.Key,
-					definition.Value );
-			}
-
-			RulingsByOracleId.Clear();
-
-			foreach (
-				KeyValuePair<Guid, List<CardRuling>> group
-					in loadedRulings )
-			{
-				RulingsByOracleId.Add( group.Key, group.Value );
-			}
-
-			LoadedRulingCount = rulingFile.RulingCount;
+			dataStream?.Dispose();
 		}
+
+		DatabaseState? previousState;
+
+		lock ( StateLock )
+		{
+			previousState = _state;
+			_state = loadedState;
+		}
+
+		previousState?.Dispose();
 
 		Log.Info(
-			$"Card database opened with {loadedEntries.Length:N0} indexed " +
+			$"Card database format v{indexFile.FormatVersion} opened with " +
+			$"{loadedEntries.Length:N0} indexed " +
 			$"cards, {loadedSetsById.Count:N0} sets, " +
 			$"{rulingFile.RulingCount:N0} rulings, and " +
 			$"{loadedSymbolDefinitions.Count:N0} symbol definitions."
@@ -352,22 +420,28 @@ public static class CardDatabase
 	/// </summary>
 	public static NormalizedCard? GetCard( Guid scryfallId )
 	{
+		DatabaseState state;
 		int recordId;
+		byte[] bytes;
 
-		lock ( StreamLock )
+		lock ( StateLock )
 		{
-			EnsureDatabaseOpen();
+			state = GetOpenState();
 
-			if ( !RecordIdByScryfallId.TryGetValue(
+			if ( !state.RecordIdByScryfallId.TryGetValue(
 				scryfallId,
 				out recordId
 			) )
 			{
 				return null;
 			}
+
+			CardIndexEntry entry = GetIndexEntry( state, recordId );
+			bytes = ReadRecordBytes( state, entry );
 		}
 
-		NormalizedCard card = GetCard( recordId );
+		NormalizedCard card =
+			DeserializeCard( bytes, recordId, state );
 
 		if ( card.Gameplay.ScryfallId != scryfallId )
 		{
@@ -384,34 +458,20 @@ public static class CardDatabase
 	/// <summary>
 	/// Retrieves normalized card data using its database-local record ID.
 	/// </summary>
-	public static NormalizedCard GetCard( int recordId )
+	internal static NormalizedCard GetCard( int recordId )
 	{
+		DatabaseState state;
 		byte[] bytes;
 
-		lock ( StreamLock )
+		lock ( StateLock )
 		{
-			EnsureDatabaseOpen();
+			state = GetOpenState();
 
-			CardIndexEntry entry = GetIndexEntry( recordId );
-			bytes = ReadRecordBytes( entry );
+			CardIndexEntry entry = GetIndexEntry( state, recordId );
+			bytes = ReadRecordBytes( state, entry );
 		}
 
-		NormalizedCard? card =
-			JsonSerializer.Deserialize<NormalizedCard>(
-				bytes,
-				DatabaseFileInfo.DatabaseJsonOptions
-			);
-
-		if ( card is null )
-		{
-			throw new InvalidDataException(
-				$"Record {recordId} deserialized to null."
-			);
-		}
-
-		ValidateNormalizedCard( card, recordId );
-
-		return card;
+		return DeserializeCard( bytes, recordId, state );
 	}
 
 	public static bool TryGetCard(
@@ -430,58 +490,66 @@ public static class CardDatabase
 	public static CardSymbolDefinition? GetSymbolDefinition(
 		SymbolIdentifier identifier )
 	{
-		lock ( StreamLock )
-		{
-			EnsureDatabaseOpen();
-
-			return SymbolDefinitionById.GetValueOrDefault( identifier );
-		}
+		return TryGetSymbolDefinition( identifier, out var definition )
+			? definition
+			: null;
 	}
 
 	public static bool TryGetSymbolDefinition(
 		SymbolIdentifier identifier,
 		out CardSymbolDefinition? definition )
 	{
-		lock ( StreamLock )
+		lock ( StateLock )
 		{
-			EnsureDatabaseOpen();
+			DatabaseState state = GetOpenState();
 
-			return SymbolDefinitionById.TryGetValue(
+			if ( !state.SymbolDefinitionById.TryGetValue(
 				identifier,
-				out definition );
+				out CardSymbolDefinition? storedDefinition ) )
+			{
+				definition = null;
+				return false;
+			}
+
+			definition = CopySymbolDefinition( storedDefinition );
+			return true;
 		}
 	}
 
 	public static CardSetDefinition? GetSetDefinition( Guid setId )
 	{
-		lock ( StreamLock )
-		{
-			EnsureDatabaseOpen();
-			return SetDefinitionById.GetValueOrDefault( setId );
-		}
+		return TryGetSetDefinition( setId, out var definition )
+			? definition
+			: null;
 	}
 
 	public static CardSetDefinition? GetSetDefinition( string setCode )
 	{
 		ArgumentException.ThrowIfNullOrWhiteSpace( setCode );
 
-		lock ( StreamLock )
-		{
-			EnsureDatabaseOpen();
-			return SetDefinitionByCode.GetValueOrDefault( setCode );
-		}
+		return TryGetSetDefinition( setCode, out var definition )
+			? definition
+			: null;
 	}
 
 	public static bool TryGetSetDefinition(
 		Guid setId,
 		out CardSetDefinition? definition )
 	{
-		lock ( StreamLock )
+		lock ( StateLock )
 		{
-			EnsureDatabaseOpen();
-			return SetDefinitionById.TryGetValue(
+			DatabaseState state = GetOpenState();
+
+			if ( !state.SetDefinitionById.TryGetValue(
 				setId,
-				out definition );
+				out CardSetDefinition? storedDefinition ) )
+			{
+				definition = null;
+				return false;
+			}
+
+			definition = CopySetDefinition( storedDefinition );
+			return true;
 		}
 	}
 
@@ -491,12 +559,20 @@ public static class CardDatabase
 	{
 		ArgumentException.ThrowIfNullOrWhiteSpace( setCode );
 
-		lock ( StreamLock )
+		lock ( StateLock )
 		{
-			EnsureDatabaseOpen();
-			return SetDefinitionByCode.TryGetValue(
+			DatabaseState state = GetOpenState();
+
+			if ( !state.SetDefinitionByCode.TryGetValue(
 				setCode,
-				out definition );
+				out CardSetDefinition? storedDefinition ) )
+			{
+				definition = null;
+				return false;
+			}
+
+			definition = CopySetDefinition( storedDefinition );
+			return true;
 		}
 	}
 
@@ -506,34 +582,44 @@ public static class CardDatabase
 	/// </summary>
 	public static CardRuling[] GetRulings( Guid oracleId )
 	{
-		lock ( StreamLock )
+		lock ( StateLock )
 		{
-			EnsureDatabaseOpen();
+			DatabaseState state = GetOpenState();
 
-			return RulingsByOracleId.TryGetValue(
+			if ( !state.RulingsByOracleId.TryGetValue(
 				oracleId,
-				out List<CardRuling>? rulings )
-				? [.. rulings]
-				: [];
+				out List<CardRuling>? rulings ) )
+			{
+				return [];
+			}
+
+			var result = new CardRuling[rulings.Count];
+
+			for ( var index = 0; index < rulings.Count; index++ )
+				result[index] = CopyRuling( rulings[index] );
+
+			return result;
 		}
 	}
 
 	public static bool ContainsCard( Guid scryfallId )
 	{
-		lock ( StreamLock )
+		lock ( StateLock )
 		{
-			return RecordIdByScryfallId.ContainsKey( scryfallId );
+			return GetOpenState()
+				.RecordIdByScryfallId
+				.ContainsKey( scryfallId );
 		}
 	}
 
-	public static bool TryGetRecordId(
+	internal static bool TryGetRecordId(
 		Guid scryfallId,
 		out int recordId
 	)
 	{
-		lock ( StreamLock )
+		lock ( StateLock )
 		{
-			return RecordIdByScryfallId.TryGetValue(
+			return GetOpenState().RecordIdByScryfallId.TryGetValue(
 				scryfallId,
 				out recordId
 			);
@@ -542,69 +628,166 @@ public static class CardDatabase
 
 	public static void Shutdown()
 	{
-		lock ( StreamLock )
-		{
-			_cardDataStream?.Dispose();
-			_cardDataStream = null;
+		DatabaseState? state;
 
-			RecordIdByScryfallId.Clear();
-			SymbolDefinitionById.Clear();
-			SetDefinitionById.Clear();
-			SetDefinitionByCode.Clear();
-			RulingsByOracleId.Clear();
-			LoadedRulingCount = 0;
-			Entries = [];
+		lock ( StateLock )
+		{
+			if ( _leaseCount != 0 )
+			{
+				throw new InvalidOperationException(
+					"Cannot shut down the card database while it has " +
+					$"{_leaseCount} active lease(s)."
+				);
+			}
+
+			state = _state;
+			_state = null;
 		}
+
+		state?.Dispose();
 	}
 
-	private static CardIndexEntry GetIndexEntry( int recordId )
+	private static void ReleaseLease()
 	{
-		if ( recordId < 0 || recordId >= Entries.Length )
+		DatabaseState? state = null;
+
+		lock ( StateLock )
+		{
+			if ( _leaseCount <= 0 )
+			{
+				throw new InvalidOperationException(
+					"Card database lease count is already zero."
+				);
+			}
+
+			_leaseCount--;
+
+			if ( _leaseCount == 0 )
+			{
+				state = _state;
+				_state = null;
+			}
+		}
+
+		state?.Dispose();
+	}
+
+	private static CardIndexEntry GetIndexEntry(
+		DatabaseState state,
+		int recordId )
+	{
+		if ( recordId < 0 || recordId >= state.Entries.Length )
 		{
 			throw new ArgumentOutOfRangeException(
 				nameof(recordId),
 				recordId,
-				$"Record ID must be between 0 and {Entries.Length - 1}."
+				$"Record ID must be between 0 and " +
+				$"{state.Entries.Length - 1}."
 			);
 		}
 
-		return Entries[recordId];
+		return state.Entries[recordId];
 	}
 
 	/// <summary>
-	/// Must be called while holding StreamLock.
+	/// Must be called while holding StateLock.
 	/// </summary>
-	private static byte[] ReadRecordBytes( CardIndexEntry entry )
+	private static byte[] ReadRecordBytes(
+		DatabaseState state,
+		CardIndexEntry entry )
 	{
-		if ( _cardDataStream is null )
-		{
-			throw new InvalidOperationException(
-				"Card database is not open."
-			);
-		}
-
 		byte[] bytes = new byte[entry.Length];
 
-		_cardDataStream.Seek( entry.Offset, SeekOrigin.Begin );
-		ReadExactly( _cardDataStream, bytes );
+		state.CardDataStream.Seek( entry.Offset, SeekOrigin.Begin );
+		ReadExactly( state.CardDataStream, bytes );
 
 		return bytes;
 	}
 
-	private static void EnsureDatabaseOpen()
+	/// <summary>
+	/// Must be called while holding StateLock.
+	/// </summary>
+	private static DatabaseState GetOpenState()
 	{
-		if ( _cardDataStream is null )
-		{
-			throw new InvalidOperationException(
+		return _state
+			?? throw new InvalidOperationException(
 				"Card database is not open. " +
-				"Call CardDatabase.Initialize() first."
+				"Call CardDatabase.Acquire() or Initialize() first."
+			);
+	}
+
+	private static NormalizedCard DeserializeCard(
+		byte[] bytes,
+		int recordId,
+		DatabaseState state )
+	{
+		NormalizedCard? card =
+			JsonSerializer.Deserialize<NormalizedCard>(
+				bytes,
+				state.FormatVersion <
+					DatabaseFileInfo.CurrentFormatVersion
+					? DatabaseFileInfo.LegacyDatabaseJsonOptions
+					: DatabaseFileInfo.DatabaseJsonOptions
+			);
+
+		if ( card is null )
+		{
+			throw new InvalidDataException(
+				$"Record {recordId} deserialized to null."
 			);
 		}
+
+		ValidateNormalizedCard( card, recordId, state );
+
+		return card;
+	}
+
+	private static CardSymbolDefinition CopySymbolDefinition(
+		CardSymbolDefinition definition )
+	{
+		return definition with
+		{
+			GathererAlternates = definition.GathererAlternates is null
+				? null
+				: [.. definition.GathererAlternates],
+			SourceExtensions = CopyExtensions(
+				definition.SourceExtensions )
+		};
+	}
+
+	private static CardSetDefinition CopySetDefinition(
+		CardSetDefinition definition )
+	{
+		return definition with
+		{
+			SourceExtensions = CopyExtensions(
+				definition.SourceExtensions )
+		};
+	}
+
+	private static CardRuling CopyRuling( CardRuling ruling )
+	{
+		return ruling with
+		{
+			SourceExtensions = CopyExtensions(
+				ruling.SourceExtensions )
+		};
+	}
+
+	private static Dictionary<string, JsonElement> CopyExtensions(
+		Dictionary<string, JsonElement>? source )
+	{
+		return source is null
+			? []
+			: new Dictionary<string, JsonElement>(
+				source,
+				source.Comparer );
 	}
 
 	private static void ValidateNormalizedCard(
 		NormalizedCard card,
-		int recordId )
+		int recordId,
+		DatabaseState state )
 	{
 		if ( card.Gameplay is null )
 		{
@@ -642,6 +825,104 @@ public static class CardDatabase
 				$"Record {recordId} has null source metadata." );
 		}
 
+		if ( card.Gameplay.ScryfallId == Guid.Empty )
+		{
+			throw new InvalidDataException(
+				$"Record {recordId} has an empty Scryfall ID." );
+		}
+
+		if ( string.IsNullOrWhiteSpace( card.Gameplay.Name ) )
+		{
+			throw new InvalidDataException(
+				$"Record {recordId} has no card name." );
+		}
+
+		if ( !Enum.IsDefined( card.Gameplay.Layout ) ||
+			!Enum.IsDefined( card.Presentation.BorderColor ) ||
+			!Enum.IsDefined( card.Presentation.Frame ) ||
+			!Enum.IsDefined( card.Presentation.Rarity ) )
+		{
+			throw new InvalidDataException(
+				$"Record {recordId} contains an undefined domain enum." );
+		}
+
+		if ( !string.Equals(
+			card.Source.Object,
+			"card",
+			StringComparison.Ordinal ) )
+		{
+			throw new InvalidDataException(
+				$"Record {recordId} has source object type " +
+				$"'{card.Source.Object}' instead of 'card'." );
+		}
+
+		if ( card.Set.Id == Guid.Empty ||
+			string.IsNullOrWhiteSpace( card.Set.Code ) )
+		{
+			throw new InvalidDataException(
+				$"Record {recordId} has an invalid set reference." );
+		}
+
+		if ( !state.SetDefinitionById.TryGetValue(
+			card.Set.Id,
+			out CardSetDefinition? setDefinition ) ||
+			!string.Equals(
+				card.Set.Code,
+				setDefinition.Code,
+				StringComparison.OrdinalIgnoreCase ) )
+		{
+			throw new InvalidDataException(
+				$"Record {recordId} references unresolved set " +
+				$"'{card.Set.Id}' with code '{card.Set.Code}'." );
+		}
+
+		if ( card.Presentation.Finishes is null )
+		{
+			throw new InvalidDataException(
+				$"Record {recordId} has null finishes." );
+		}
+
+		foreach ( CardFinish finish in card.Presentation.Finishes )
+		{
+			if ( !Enum.IsDefined( finish ) )
+			{
+				throw new InvalidDataException(
+					$"Record {recordId} contains undefined finish " +
+						$"'{finish}'." );
+			}
+		}
+
+		if ( card.Presentation.FrameEffects is not null )
+		{
+			foreach ( FrameEffect effect in card.Presentation.FrameEffects )
+			{
+				if ( !Enum.IsDefined( effect ) )
+				{
+					throw new InvalidDataException(
+						$"Record {recordId} contains undefined frame " +
+							$"effect '{effect}'." );
+				}
+			}
+		}
+
+		if ( card.Gameplay.Legalities is null )
+		{
+			throw new InvalidDataException(
+				$"Record {recordId} has null format legalities." );
+		}
+
+		foreach ( KeyValuePair<string, CardLegality> legality
+			in card.Gameplay.Legalities.ByFormat )
+		{
+			if ( string.IsNullOrWhiteSpace( legality.Key ) ||
+				!Enum.IsDefined( legality.Value ) )
+			{
+				throw new InvalidDataException(
+					$"Record {recordId} contains invalid format legality " +
+						$"'{legality.Key}' = '{legality.Value}'." );
+			}
+		}
+
 		if ( card.Gameplay.Faces is not { Length: > 0 } faces )
 		{
 			throw new InvalidDataException(
@@ -667,129 +948,99 @@ public static class CardDatabase
 				throw new InvalidDataException(
 					$"Record {recordId}, face {index} has no name." );
 			}
+
+			if ( !string.Equals(
+				faces[index].Object,
+				"card_face",
+				StringComparison.Ordinal ) )
+			{
+				throw new InvalidDataException(
+					$"Record {recordId}, face {index} has object type " +
+						$"'{faces[index].Object}' instead of 'card_face'." );
+			}
 		}
 	}
 
 	private static CardIndexFile ReadIndexFile()
 	{
-		using Stream indexStream =
-			FileSystem.Data.OpenRead( DatabaseFileInfo.CardIndexFile );
-
-		CardIndexFile? indexFile =
-			JsonSerializer.Deserialize<CardIndexFile>(
-				indexStream,
-				DatabaseFileInfo.DatabaseJsonOptions
-			);
-
-		if ( indexFile is null )
-		{
-			throw new InvalidDataException(
-				"Could not deserialize the card index."
-			);
-		}
-
-		if (
-			indexFile.FormatVersion !=
-			DatabaseFileInfo.CurrentFormatVersion
-		)
-		{
-			throw new InvalidDataException(
-				$"Unsupported card database version: " +
-				$"{indexFile.FormatVersion}. Expected " +
-				$"{DatabaseFileInfo.CurrentFormatVersion}."
-			);
-		}
-
-		return indexFile;
+		return ReadVersionedFile<CardIndexFile>(
+			DatabaseFileInfo.CardIndexFile,
+			"card database" );
 	}
 
 	private static CardSymbolDefinitionFile ReadSymbolDefinitionFile()
 	{
-		using Stream input =
-			FileSystem.Data.OpenRead(
-				DatabaseFileInfo.SymbolDefinitionsFile );
-
-		CardSymbolDefinitionFile? symbolFile =
-			JsonSerializer.Deserialize<CardSymbolDefinitionFile>(
-				input,
-				DatabaseFileInfo.DatabaseJsonOptions );
-
-		if ( symbolFile is null )
-		{
-			throw new InvalidDataException(
-				"Could not deserialize the symbol-definition file." );
-		}
-
-		if (
-			symbolFile.FormatVersion !=
-			DatabaseFileInfo.CurrentFormatVersion
-		)
-		{
-			throw new InvalidDataException(
-				$"Unsupported symbol-definition version: " +
-				$"{symbolFile.FormatVersion}. Expected " +
-				$"{DatabaseFileInfo.CurrentFormatVersion}." );
-		}
-
-		return symbolFile;
+		return ReadVersionedFile<CardSymbolDefinitionFile>(
+			DatabaseFileInfo.SymbolDefinitionsFile,
+			"symbol-definition" );
 	}
 
 	private static CardSetDefinitionFile ReadSetDefinitionFile()
 	{
-		using Stream input =
-			FileSystem.Data.OpenRead(
-				DatabaseFileInfo.SetDefinitionsFile );
-
-		CardSetDefinitionFile? setFile =
-			JsonSerializer.Deserialize<CardSetDefinitionFile>(
-				input,
-				DatabaseFileInfo.DatabaseJsonOptions );
-
-		if ( setFile is null )
-		{
-			throw new InvalidDataException(
-				"Could not deserialize the set-definition file." );
-		}
-
-		ValidateFormatVersion(
-			setFile.FormatVersion,
+		return ReadVersionedFile<CardSetDefinitionFile>(
+			DatabaseFileInfo.SetDefinitionsFile,
 			"set-definition" );
-
-		return setFile;
 	}
 
 	private static CardRulingFile ReadRulingFile()
 	{
-		using Stream input =
-			FileSystem.Data.OpenRead( DatabaseFileInfo.RulingsFile );
+		return ReadVersionedFile<CardRulingFile>(
+			DatabaseFileInfo.RulingsFile,
+			"ruling" );
+	}
 
-		CardRulingFile? rulingFile =
-			JsonSerializer.Deserialize<CardRulingFile>(
-				input,
-				DatabaseFileInfo.DatabaseJsonOptions );
+	private static T ReadVersionedFile<T>(
+		string path,
+		string fileDescription )
+		where T : class
+	{
+		using Stream input = FileSystem.Data.OpenRead( path );
+		using JsonDocument document = JsonDocument.Parse( input );
 
-		if ( rulingFile is null )
+		if (
+			document.RootElement.ValueKind != JsonValueKind.Object ||
+			!document.RootElement.TryGetProperty(
+				nameof(CardIndexFile.FormatVersion),
+				out JsonElement versionElement ) ||
+			!versionElement.TryGetInt32( out int formatVersion )
+		)
 		{
 			throw new InvalidDataException(
-				"Could not deserialize the rulings file." );
+				$"The {fileDescription} file has no valid format version." );
 		}
 
-		ValidateFormatVersion(
-			rulingFile.FormatVersion,
-			"ruling" );
+		ValidateFormatVersion( formatVersion, fileDescription );
 
-		return rulingFile;
+		JsonSerializerOptions options =
+			formatVersion < DatabaseFileInfo.CurrentFormatVersion
+				? DatabaseFileInfo.LegacyDatabaseJsonOptions
+				: DatabaseFileInfo.DatabaseJsonOptions;
+
+		T? value = document.RootElement.Deserialize<T>( options );
+
+		if ( value is null )
+		{
+			throw new InvalidDataException(
+				$"Could not deserialize the {fileDescription} file." );
+		}
+
+		return value;
 	}
 
 	private static void ValidateFormatVersion(
 		int actual,
 		string fileDescription )
 	{
-		if ( actual != DatabaseFileInfo.CurrentFormatVersion )
+		if (
+			actual < DatabaseFileInfo.OldestReadableFormatVersion ||
+			actual > DatabaseFileInfo.CurrentFormatVersion
+		)
 		{
 			throw new InvalidDataException(
 				$"Unsupported {fileDescription} version: {actual}. " +
-				$"Expected {DatabaseFileInfo.CurrentFormatVersion}." );
+				$"Supported versions are " +
+				$"{DatabaseFileInfo.OldestReadableFormatVersion} through " +
+				$"{DatabaseFileInfo.CurrentFormatVersion}." );
 		}
 	}
 

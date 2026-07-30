@@ -4,6 +4,8 @@ using System.Text.Json.Serialization;
 
 namespace Sandbox.Classes.Cards.ManaSymbols.Util;
 
+#nullable enable
+
 /// <summary>
 /// Stores a SymbolIdentifier as its canonical, braced Scryfall string.
 /// </summary>

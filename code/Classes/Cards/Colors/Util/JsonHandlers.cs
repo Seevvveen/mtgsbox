@@ -4,6 +4,8 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 namespace Sandbox.Classes.Cards.Colors.Util;
 
+#nullable enable
+
 
 internal static class ScryfallSetJsonReader
 {
@@ -32,7 +34,12 @@ internal static class ScryfallSetJsonReader
 
 			try
 			{
-				result = union( result, parseSymbol( reader.GetString() ) );
+				string symbol =
+					reader.GetString()
+					?? throw new JsonException(
+						$"{typeName} entries cannot be null." );
+
+				result = union( result, parseSymbol( symbol ) );
 			}
 			catch ( ArgumentException exception )
 			{

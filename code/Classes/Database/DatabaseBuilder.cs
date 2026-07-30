@@ -7,6 +7,7 @@ using System;
 using System.IO;
 using System.IO.Compression;
 using System.Text.Json;
+using System.Threading;
 namespace Sandbox.Classes.Database;
 
 /// <summary>
@@ -15,13 +16,20 @@ namespace Sandbox.Classes.Database;
 /// </summary>
 public static class DatabaseBuilder
 {
-	public static void BuildDatabase()
+	public static void BuildDatabase(
+		CancellationToken cancellationToken = default )
 	{
+		cancellationToken.ThrowIfCancellationRequested();
+
 		List<CardSymbolDefinition> symbolDefinitions =
-			ReadSymbolDefinitions();
+			ReadSymbolDefinitions( cancellationToken );
 		List<CardSetDefinition> setDefinitions =
-			ReadSetDefinitions();
-		List<CardRuling> rulings = ReadRulings();
+			ReadSetDefinitions( cancellationToken );
+		List<CardRuling> rulings =
+			ReadRulings( cancellationToken );
+		Dictionary<Guid, CardSetDefinition> setDefinitionsById =
+			setDefinitions.ToDictionary( definition => definition.Id );
+		var cardIds = new HashSet<Guid>();
 
 		using Stream input =
 			FileSystem.Data.OpenRead( DatabaseFileInfo.SourceFile );
@@ -44,6 +52,36 @@ public static class DatabaseBuilder
 				NormalizedCard card =
 					ScryfallCardNormalizer.Normalize( dto );
 
+				if ( !cardIds.Add( card.Gameplay.ScryfallId ) )
+				{
+					throw new InvalidDataException(
+						$"Duplicate Scryfall card ID " +
+						$"'{card.Gameplay.ScryfallId}'."
+					);
+				}
+
+				if ( !setDefinitionsById.TryGetValue(
+					card.Set.Id,
+					out CardSetDefinition? setDefinition ) )
+				{
+					throw new InvalidDataException(
+						$"Card '{card.Gameplay.ScryfallId}' references " +
+						$"unknown set '{card.Set.Id}'."
+					);
+				}
+
+				if ( !string.Equals(
+					card.Set.Code,
+					setDefinition.Code,
+					StringComparison.OrdinalIgnoreCase ) )
+				{
+					throw new InvalidDataException(
+						$"Card '{card.Gameplay.ScryfallId}' uses set code " +
+						$"'{card.Set.Code}', but set '{card.Set.Id}' is " +
+						$"registered as '{setDefinition.Code}'."
+					);
+				}
+
 				int recordId = indexEntries.Count;
 
 				CardIndexEntry entry =
@@ -57,9 +95,11 @@ public static class DatabaseBuilder
 					RecordId = recordId
 				});
 			},
-			DatabaseFileInfo.ImportJsonOptions
+			DatabaseFileInfo.ImportJsonOptions,
+			cancellationToken
 		);
 
+		cancellationToken.ThrowIfCancellationRequested();
 		outputData.Flush();
 
 		CardIndexFile indexFile = new()
@@ -70,9 +110,13 @@ public static class DatabaseBuilder
 			IdMappings = idMappings
 		};
 
+		cancellationToken.ThrowIfCancellationRequested();
 		WriteIndexFile( indexFile );
+		cancellationToken.ThrowIfCancellationRequested();
 		WriteSymbolDefinitionsFile( symbolDefinitions );
+		cancellationToken.ThrowIfCancellationRequested();
 		WriteSetDefinitionsFile( setDefinitions );
+		cancellationToken.ThrowIfCancellationRequested();
 		WriteRulingsFile( rulings );
 
 		Log.Info(
@@ -82,7 +126,8 @@ public static class DatabaseBuilder
 		);
 	}
 
-	private static List<CardSetDefinition> ReadSetDefinitions()
+	private static List<CardSetDefinition> ReadSetDefinitions(
+		CancellationToken cancellationToken )
 	{
 		using Stream input =
 			FileSystem.Data.OpenRead( DatabaseFileInfo.SetSourceFile );
@@ -130,6 +175,8 @@ public static class DatabaseBuilder
 
 		for ( var index = 0; index < sourceSets.Length; index++ )
 		{
+			cancellationToken.ThrowIfCancellationRequested();
+
 			CardSetDefinition definition =
 				ScryfallSupplementalNormalizer.NormalizeSet(
 					sourceSets[index] );
@@ -162,7 +209,8 @@ public static class DatabaseBuilder
 		return definitions;
 	}
 
-	private static List<CardRuling> ReadRulings()
+	private static List<CardRuling> ReadRulings(
+		CancellationToken cancellationToken )
 	{
 		using Stream input =
 			FileSystem.Data.OpenRead(
@@ -189,7 +237,8 @@ public static class DatabaseBuilder
 
 				rulings.Add( ruling );
 			},
-			DatabaseFileInfo.ImportJsonOptions );
+			DatabaseFileInfo.ImportJsonOptions,
+			cancellationToken );
 
 		if ( rulings.Count == 0 )
 		{
@@ -200,7 +249,8 @@ public static class DatabaseBuilder
 		return rulings;
 	}
 
-	private static List<CardSymbolDefinition> ReadSymbolDefinitions()
+	private static List<CardSymbolDefinition> ReadSymbolDefinitions(
+		CancellationToken cancellationToken )
 	{
 		using Stream input =
 			FileSystem.Data.OpenRead( DatabaseFileInfo.SymbolSourceFile );
@@ -245,6 +295,8 @@ public static class DatabaseBuilder
 
 		for ( var index = 0; index < sourceDefinitions.Length; index++ )
 		{
+			cancellationToken.ThrowIfCancellationRequested();
+
 			CardSymbolDefinition definition =
 				ScryfallSymbolNormalizer.Normalize(
 					sourceDefinitions[index] );
@@ -265,7 +317,8 @@ public static class DatabaseBuilder
 	private static void ReadJsonLines<T>(
 		Stream input,
 		Action<T, int> onObject,
-		JsonSerializerOptions options )
+		JsonSerializerOptions options,
+		CancellationToken cancellationToken )
 	{
 		using Stream decodedInput = OpenDecodedInput(input);
 		using StreamReader reader = new(decodedInput);
@@ -275,6 +328,7 @@ public static class DatabaseBuilder
 
 		while ( reader.ReadLine() is { } line )
 		{
+			cancellationToken.ThrowIfCancellationRequested();
 			lineNumber++;
 
 			if ( string.IsNullOrWhiteSpace(line) )
@@ -331,6 +385,14 @@ public static class DatabaseBuilder
 			value,
 			DatabaseFileInfo.DatabaseJsonOptions
 		);
+
+		if ( bytes.Length > DatabaseFileInfo.MaxCardRecordBytes )
+		{
+			throw new InvalidDataException(
+				$"Serialized card record is {bytes.Length} bytes; the " +
+				$"maximum is {DatabaseFileInfo.MaxCardRecordBytes} bytes."
+			);
+		}
 
 		long offset = output.Position;
 

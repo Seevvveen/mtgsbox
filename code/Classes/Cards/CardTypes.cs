@@ -83,9 +83,9 @@ public sealed record CardKeywords
 
 public enum CardFinish
 {
-	Nonfoil,
-	Foil,
-	Etched
+	Nonfoil = 0,
+	Foil = 1,
+	Etched = 2
 }
 
 /// <summary>

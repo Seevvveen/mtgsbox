@@ -2,8 +2,8 @@
 
 using Sandbox.Classes.CardDatabase;
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
@@ -51,40 +51,54 @@ public sealed class Scryfall
 		public string? ContentEncoding { get; set; }
 	}
 
-	public Task UpdateBulk()
+	public Task UpdateBulk(
+		CancellationToken cancellationToken = default,
+		bool force = false )
 	{
 		return UpdateBulkFile(
 			"oracle-cards",
 			DatabaseFileInfo.SourceFile,
-			CardMetaFile );
+			CardMetaFile,
+			cancellationToken,
+			force );
 	}
 
-	public Task UpdateRulings()
+	public Task UpdateRulings(
+		CancellationToken cancellationToken = default,
+		bool force = false )
 	{
 		return UpdateBulkFile(
 			"rulings",
 			DatabaseFileInfo.RulingsSourceFile,
-			RulingsMetaFile );
+			RulingsMetaFile,
+			cancellationToken,
+			force );
 	}
 
-	public Task UpdateSets()
+	public Task UpdateSets(
+		CancellationToken cancellationToken = default )
 	{
 		return DownloadApiFile(
 			$"{Api}/sets",
-			DatabaseFileInfo.SetSourceFile );
+			DatabaseFileInfo.SetSourceFile,
+			cancellationToken );
 	}
 
-	public Task UpdateSymbology()
+	public Task UpdateSymbology(
+		CancellationToken cancellationToken = default )
 	{
 		return DownloadApiFile(
 			$"{Api}/symbology",
-			DatabaseFileInfo.SymbolSourceFile );
+			DatabaseFileInfo.SymbolSourceFile,
+			cancellationToken );
 	}
 
 	private static async Task UpdateBulkFile(
 		string bulkType,
 		string destinationFile,
-		string metadataFile )
+		string metadataFile,
+		CancellationToken cancellationToken,
+		bool force )
 	{
 		Dictionary<string, string> headers = CreateHeaders();
 
@@ -94,7 +108,7 @@ public sealed class Scryfall
 				method: "GET",
 				content: null,
 				headers: headers,
-				cancellationToken: CancellationToken.None );
+				cancellationToken: cancellationToken );
 
 		if ( !string.Equals(
 			response.Object,
@@ -123,24 +137,62 @@ public sealed class Scryfall
 				$"Scryfall bulk type '{bulkType}' has no download URI." );
 		}
 
+		if ( response.UpdatedAt == default )
+		{
+			throw new InvalidDataException(
+				$"Scryfall bulk type '{bulkType}' has no update time." );
+		}
+
+		if ( response.CompressedSize <= 0 )
+		{
+			throw new InvalidDataException(
+				$"Scryfall bulk type '{bulkType}' has invalid compressed " +
+				$"size {response.CompressedSize}." );
+		}
+
+		Uri downloadUri =
+			ValidateDownloadUri( response.JsonlDownloadUri, bulkType );
+
 		DateTimeOffset? localUpdated =
 			GetLocalUpdatedAt( metadataFile );
 
 		if (
+			!force &&
 			localUpdated.HasValue &&
 			localUpdated.Value >= response.UpdatedAt &&
-			FileSystem.Data.FileExists( destinationFile )
+			FileSystem.Data.FileExists( destinationFile ) &&
+			FileSystem.Data.FileSize( destinationFile ) ==
+				response.CompressedSize
 		)
 		{
 			return;
 		}
 
 		byte[] data = await Http.RequestBytesAsync(
-			requestUri: response.JsonlDownloadUri,
+			requestUri: downloadUri.ToString(),
 			method: "GET",
 			content: null,
 			headers: headers,
-			cancellationToken: CancellationToken.None );
+			cancellationToken: cancellationToken );
+
+		if ( data.LongLength != response.CompressedSize )
+		{
+			throw new InvalidDataException(
+				$"Downloaded Scryfall bulk type '{bulkType}' was " +
+				$"{data.LongLength} bytes; expected " +
+				$"{response.CompressedSize} bytes." );
+		}
+
+		if ( string.Equals(
+			response.ContentEncoding,
+			"gzip",
+			StringComparison.OrdinalIgnoreCase ) &&
+			(data.Length < 2 || data[0] != 0x1F || data[1] != 0x8B) )
+		{
+			throw new InvalidDataException(
+				$"Scryfall bulk type '{bulkType}' claims gzip encoding " +
+				"but does not have a gzip header." );
+		}
 
 		WriteDataFile( destinationFile, data );
 		SaveLocalUpdatedAt( metadataFile, response.UpdatedAt );
@@ -148,15 +200,17 @@ public sealed class Scryfall
 
 	private static async Task DownloadApiFile(
 		string requestUri,
-		string destinationFile )
+		string destinationFile,
+		CancellationToken cancellationToken )
 	{
 		byte[] data = await Http.RequestBytesAsync(
 			requestUri: requestUri,
 			method: "GET",
 			content: null,
 			headers: CreateHeaders(),
-			cancellationToken: CancellationToken.None );
+			cancellationToken: cancellationToken );
 
+		ValidateListResponse( data, requestUri );
 		WriteDataFile( destinationFile, data );
 	}
 
@@ -188,12 +242,93 @@ public sealed class Scryfall
 		string destinationFile,
 		byte[] data )
 	{
+		if ( data.Length == 0 )
+		{
+			throw new InvalidDataException(
+				$"Refusing to replace '{destinationFile}' with an " +
+				"empty download." );
+		}
+
 		using Stream fileStream = FileSystem.Data.OpenWrite(
 			destinationFile,
 			FileMode.Create );
 
 		fileStream.Write( data, 0, data.Length );
 		fileStream.Flush();
+	}
+
+	private static Uri ValidateDownloadUri(
+		string value,
+		string bulkType )
+	{
+		if ( !Uri.TryCreate( value, UriKind.Absolute, out Uri? uri ) ||
+			!string.Equals(
+				uri.Scheme,
+				Uri.UriSchemeHttps,
+				StringComparison.OrdinalIgnoreCase ) ||
+			!IsScryfallHost( uri.Host ) )
+		{
+			throw new InvalidDataException(
+				$"Scryfall bulk type '{bulkType}' returned an " +
+				$"untrusted download URI '{value}'." );
+		}
+
+		return uri;
+	}
+
+	private static bool IsScryfallHost( string host )
+	{
+		return string.Equals(
+				host,
+				"scryfall.com",
+				StringComparison.OrdinalIgnoreCase ) ||
+			host.EndsWith(
+				".scryfall.com",
+				StringComparison.OrdinalIgnoreCase ) ||
+			string.Equals(
+				host,
+				"scryfall.io",
+				StringComparison.OrdinalIgnoreCase ) ||
+			host.EndsWith(
+				".scryfall.io",
+				StringComparison.OrdinalIgnoreCase );
+	}
+
+	private static void ValidateListResponse(
+		byte[] data,
+		string requestUri )
+	{
+		if ( data.Length == 0 )
+		{
+			throw new InvalidDataException(
+				$"Scryfall endpoint '{requestUri}' returned no data." );
+		}
+
+		try
+		{
+			using JsonDocument document = JsonDocument.Parse( data );
+			JsonElement root = document.RootElement;
+
+			if ( root.ValueKind != JsonValueKind.Object ||
+				!root.TryGetProperty( "object", out JsonElement objectKind ) ||
+				!string.Equals(
+					objectKind.GetString(),
+					"list",
+					StringComparison.Ordinal ) ||
+				!root.TryGetProperty( "data", out JsonElement listData ) ||
+				listData.ValueKind != JsonValueKind.Array )
+			{
+				throw new InvalidDataException(
+					$"Scryfall endpoint '{requestUri}' did not return " +
+						"a list response." );
+			}
+		}
+		catch ( JsonException exception )
+		{
+			throw new InvalidDataException(
+				$"Scryfall endpoint '{requestUri}' returned invalid JSON.",
+				exception );
+		}
 	}
 
 	private static Dictionary<string, string> CreateHeaders()

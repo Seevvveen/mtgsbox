@@ -11,11 +11,24 @@ namespace Sandbox.Classes.Cards.Legality;
 /// </summary>
 public sealed record FormatLegalities
 {
-	public Dictionary<string, CardLegality> ByFormat { get; init; } =
+	private Dictionary<string, CardLegality> _byFormat =
 		new( StringComparer.OrdinalIgnoreCase );
+
+	public Dictionary<string, CardLegality> ByFormat
+	{
+		get => _byFormat;
+		init => _byFormat = value is null
+			? new Dictionary<string, CardLegality>(
+				StringComparer.OrdinalIgnoreCase )
+			: new Dictionary<string, CardLegality>(
+				value,
+				StringComparer.OrdinalIgnoreCase );
+	}
 
 	public CardLegality? Get( string format )
 	{
+		ArgumentException.ThrowIfNullOrWhiteSpace( format );
+
 		return ByFormat.TryGetValue( format, out CardLegality legality )
 			? legality
 			: null;

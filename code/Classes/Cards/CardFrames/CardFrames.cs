@@ -2,9 +2,9 @@
 
 public enum CardFrame
 {
-	Frame1993,
-	Frame1997,
-	Frame2003,
-	Frame2015,
-	Future
+	Frame1993 = 0,
+	Frame1997 = 1,
+	Frame2003 = 2,
+	Frame2015 = 3,
+	Future = 4
 }

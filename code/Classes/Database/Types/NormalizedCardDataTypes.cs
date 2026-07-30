@@ -25,13 +25,13 @@ public sealed record NormalizedCard
 
 public sealed record CardGameplayData
 {
-	public Guid ScryfallId { get; init; }
+	public required Guid ScryfallId { get; init; }
 	public Guid? OracleId { get; init; }
-	public CardLayout Layout { get; init; }
+	public required CardLayout Layout { get; init; }
 	public string? SourceManaCost { get; init; }
 	public required CardFace[] Faces { get; init; }
-	public decimal ManaValue { get; init; }
-	public ColorSet ColorIdentity { get; init; }
+	public required decimal ManaValue { get; init; }
+	public required ColorSet ColorIdentity { get; init; }
 	public ColorSet? Colors { get; init; }
 	public ColorSet? ColorIndicator { get; init; }
 	public CardDefense? Defense { get; init; }
@@ -59,7 +59,7 @@ public sealed record CardPresentationData
 	public Guid[]? ArtistIds { get; init; }
 	public int[]? AttractionLights { get; init; }
 	public bool Booster { get; init; }
-	public BorderColor BorderColor { get; init; }
+	public required BorderColor BorderColor { get; init; }
 	public Guid? CardBack { get; init; }
 	public required string CollectorNumber { get; init; }
 	public bool? ContentWarning { get; init; }
@@ -69,7 +69,7 @@ public sealed record CardPresentationData
 	public bool Nonfoil { get; init; }
 	public string? FlavorName { get; init; }
 	public string? FlavorText { get; init; }
-	public CardFrame Frame { get; init; }
+	public required CardFrame Frame { get; init; }
 	public FrameEffect[]? FrameEffects { get; init; }
 	public bool FullArt { get; init; }
 	public string[] Games { get; init; } = [];
@@ -85,7 +85,7 @@ public sealed record CardPresentationData
 	public string? PrintedTypeLine { get; init; }
 	public bool Promo { get; init; }
 	public string[]? PromoTypes { get; init; }
-	public CardRarity Rarity { get; init; }
+	public required CardRarity Rarity { get; init; }
 	public DateTime? ReleasedAt { get; init; }
 	public bool Reprint { get; init; }
 	public string? SecurityStamp { get; init; }
@@ -111,7 +111,7 @@ public sealed record CardIdentifierData
 
 public sealed record CardSetData
 {
-	public Guid Id { get; init; }
+	public required Guid Id { get; init; }
 	public required string Code { get; init; }
 	public required string Name { get; init; }
 	public required string Type { get; init; }
@@ -122,13 +122,33 @@ public sealed record CardSetData
 
 public sealed record CardResourceLinks
 {
+	private Dictionary<string, string>? _purchaseUris;
+	private Dictionary<string, string> _relatedUris =
+		new( StringComparer.OrdinalIgnoreCase );
+
 	public required string ApiUri { get; init; }
 	public required string ScryfallUri { get; init; }
 	public required string PrintsSearchUri { get; init; }
 	public required string RulingsUri { get; init; }
-	public Dictionary<string, string>? PurchaseUris { get; init; }
-	public Dictionary<string, string> RelatedUris { get; init; } =
-		new( StringComparer.OrdinalIgnoreCase );
+	public Dictionary<string, string>? PurchaseUris
+	{
+		get => _purchaseUris;
+		init => _purchaseUris = value is null
+			? null
+			: new Dictionary<string, string>(
+				value,
+				StringComparer.OrdinalIgnoreCase );
+	}
+	public Dictionary<string, string> RelatedUris
+	{
+		get => _relatedUris;
+		init => _relatedUris = value is null
+			? new Dictionary<string, string>(
+				StringComparer.OrdinalIgnoreCase )
+			: new Dictionary<string, string>(
+				value,
+				StringComparer.OrdinalIgnoreCase );
+	}
 }
 
 public sealed record CardSourceMetadata

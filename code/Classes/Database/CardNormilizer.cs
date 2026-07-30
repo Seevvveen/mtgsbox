@@ -19,6 +19,8 @@ public static class ScryfallCardNormalizer
 	public static NormalizedCard Normalize( ScryfallCardDto dto )
 	{
 		ArgumentNullException.ThrowIfNull( dto );
+		string objectKind =
+			RequireObjectKind( dto.Object, "object", "card" );
 
 		return new NormalizedCard
 		{
@@ -161,7 +163,7 @@ public static class ScryfallCardNormalizer
 			},
 			Source = new CardSourceMetadata
 			{
-				Object = RequireString( dto.Object, "object" ),
+				Object = objectKind,
 				Language = RequireString( dto.Lang, "lang" ),
 				Extensions = CopyExtensions( dto.AdditionalFields )
 			}
@@ -192,9 +194,10 @@ public static class ScryfallCardNormalizer
 
 			faces[index] = new CardFace
 			{
-				Object = RequireString(
+				Object = RequireObjectKind(
 					source.Object,
-					$"{prefix}.object" ),
+					$"{prefix}.object",
+					"card_face" ),
 				Name = RequireString(
 					source.Name,
 					$"{prefix}.name" ),
@@ -759,5 +762,26 @@ public static class ScryfallCardNormalizer
 			throw MissingField( field );
 
 		return value;
+	}
+
+	private static string RequireObjectKind(
+		string? value,
+		string field,
+		string expected )
+	{
+		string actual = RequireString( value, field );
+
+		if ( !string.Equals(
+			actual,
+			expected,
+			StringComparison.Ordinal ) )
+		{
+			throw new InvalidDataException(
+				$"Expected Scryfall field '{field}' to be '{expected}', " +
+				$"but received '{actual}'."
+			);
+		}
+
+		return actual;
 	}
 }

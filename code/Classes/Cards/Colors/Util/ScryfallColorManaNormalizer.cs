@@ -2,6 +2,8 @@
 using System;
 namespace Sandbox.Classes.Cards.Colors.Util;
 
+#nullable enable
+
 
 /// <summary>
 /// Maps Scryfall color-related DTO fields without merging distinct card faces.

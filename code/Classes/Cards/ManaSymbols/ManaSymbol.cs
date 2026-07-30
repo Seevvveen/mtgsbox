@@ -3,6 +3,8 @@ using System;
 using System.Globalization;
 namespace Sandbox.Classes.Cards.ManaSymbols;
 
+#nullable enable
+
 /// <summary>
 /// One symbol appearing inside a mana cost.
 ///
