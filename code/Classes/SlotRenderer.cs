@@ -65,11 +65,9 @@ public static class SlotRenderer
 			new Rect( width, 0, width, height ) );
 
 		Texture texture = atlas.ToTexture();
-		Material material = Material.Create(
+		Material material = CardMaterialFactory.Create(
 			$"mtgsbox_zone_{zone}_{resolution}",
-			"complex.shader",
-			anonymous: true );
-		material.Set( "g_tColor", texture );
+			texture );
 
 		var result = new ZoneSlotTextures
 		{

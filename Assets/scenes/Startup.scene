@@ -6,8 +6,8 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Camera",
-      "Position": "0,0,0",
-      "Rotation": "0,0,0,1",
+      "Position": "0,0,351.25",
+      "Rotation": "0,0.707106769,0,0.707106769",
       "Scale": "1,1,1",
       "Tags": "maincamera",
       "Enabled": true,
@@ -50,79 +50,12 @@
       "Children": []
     },
     {
-      "__guid": "0bfb20cd-805d-4187-8a74-8f3450cdd13a",
-      "__version": 2,
-      "Flags": 0,
-      "Name": "Screen",
-      "Position": "0,0,0",
-      "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
-      "Tags": "",
-      "Enabled": true,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [
-        {
-          "__type": "Sandbox.ScreenPanel",
-          "__guid": "3871e4de-d4bf-4268-acc9-ed00fbf4a3e5",
-          "__enabled": true,
-          "Flags": 0,
-          "AutoScreenScale": true,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Opacity": 1,
-          "Scale": 1,
-          "ScaleStrategy": "ConsistentHeight",
-          "TargetCamera": {
-            "_type": "component",
-            "component_id": "99587a34-202d-4a24-a314-713e5a1ab63b",
-            "go": "48e51710-1932-4424-b974-d16494c7a8ef",
-            "component_type": "CameraComponent"
-          },
-          "ZIndex": 100
-        },
-        {
-          "__type": "Sandbox.UserInterface.MyRootPanel",
-          "__guid": "a52ea557-b5fd-43af-a612-96bf302e86fe",
-          "__enabled": true,
-          "Flags": 0,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
-        },
-        {
-          "__type": "Sandbox.RazorComponent",
-          "__guid": "ba33b153-4266-45b6-ae84-1788ba8a57d6",
-          "__enabled": true,
-          "Flags": 0,
-          "MyStringValue": "Hello World!",
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
-        }
-      ],
-      "Children": []
-    },
-    {
       "__guid": "5c45d61d-636c-408f-93f4-6be7351dd3d5",
       "__version": 2,
       "Flags": 0,
       "Name": "Sun",
-      "Position": "0,0,0",
-      "Rotation": "0,0,0,1",
+      "Position": "0,0,1000",
+      "Rotation": "0,0.707106829,0,0.707106769",
       "Scale": "1,1,1",
       "Tags": "light_directional,light",
       "Enabled": true,
@@ -137,6 +70,8 @@
           "__guid": "82d6555b-d48a-457b-8455-2bad85bc52ae",
           "__enabled": true,
           "Flags": 0,
+          "ContactShadows": true,
+          "Contribution": "Diffuse, Specular, Transmissive",
           "FogMode": "Enabled",
           "FogStrength": 0.9465649,
           "LightColor": "1,1,1,1",
@@ -151,8 +86,107 @@
           "ShadowCascadeSplitRatio": 0.91,
           "ShadowHardness": 0,
           "Shadows": true,
-          "SkyColor": "1,1,1,0",
+          "SkyColor": "1,1,1,0.5",
           "Visualizer": {}
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "3f51f2bf-9fca-4c37-ba7a-50609591b252",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Object",
+      "Position": "922.020874,82.3150558,-133.128494",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [],
+      "Children": []
+    },
+    {
+      "__guid": "dad99506-0183-41e2-b16c-a1abfd6e9c47",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Plane",
+      "Position": "0,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "10,10,10",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ModelRenderer",
+          "__guid": "071c292f-6b1b-4148-905d-094421f71bbb",
+          "__enabled": true,
+          "Flags": 0,
+          "BodyGroups": 18446744073709551615,
+          "CreateAttachments": false,
+          "LodOverride": null,
+          "MaterialGroup": null,
+          "MaterialOverride": null,
+          "Materials": null,
+          "Model": "models/dev/plane.vmdl",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "RenderOptions": {
+            "GameLayer": true,
+            "OverlayLayer": false,
+            "BloomLayer": false,
+            "AfterUILayer": false
+          },
+          "RenderType": "On",
+          "Tint": "1,1,1,1"
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "839caef7-593d-457d-8da8-e01dfca1a952",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Object",
+      "Position": "0,0,4.625",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.Classes.MtgTestBootstrap",
+          "__guid": "c6069b22-083c-4a19-a9db-6d7066e23ce1",
+          "__enabled": true,
+          "Flags": 0,
+          "CardWidth": 32,
+          "LibraryCardCount": 12,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "RunOnStart": true,
+          "ZoneSpacing": 50
         }
       ],
       "Children": []
@@ -178,18 +212,15 @@
       "CustomBounds": false
     },
     "GameObjectSystems": {
-      "Sandbox.SelectionSetsSystem": {
-        "Data": {
-          "SelectionSets": []
-        }
-      },
       "Sandbox.Clutter.ClutterGridSystem": {
         "Storage": {
           "$blob": "c28887a4-c7a2-4b80-afed-82bd74a0ec25"
         }
       },
-      "Sandbox.MovieMaker.MovieRecorderSystem": {
-        "DisableClientRecording": false
+      "Sandbox.SelectionSetsSystem": {
+        "Data": {
+          "SelectionSets": []
+        }
       }
     }
   },

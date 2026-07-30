@@ -141,12 +141,10 @@ public static class CardFaceRenderer
 			concealed ? back : front,
 			back );
 
-		Material material = Material.Create(
+		Material material = CardMaterialFactory.Create(
 			$"mtgsbox_card_{card.Gameplay.ScryfallId:N}_" +
 			$"{(concealed ? "concealed" : "visible")}",
-			"complex.shader",
-			anonymous: true );
-		material.Set( "g_tColor", atlas );
+			atlas );
 
 		return new CardTextures
 		{
@@ -175,11 +173,9 @@ public static class CardFaceRenderer
 		}
 
 		Texture atlas = await CreateAtlasAsync( back, back );
-		Material material = Material.Create(
+		Material material = CardMaterialFactory.Create(
 			"mtgsbox_card_concealed",
-			"complex.shader",
-			anonymous: true );
-		material.Set( "g_tColor", atlas );
+			atlas );
 
 		return new CardTextures
 		{

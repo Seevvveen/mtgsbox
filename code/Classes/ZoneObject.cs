@@ -68,6 +68,9 @@ public sealed class ZoneObject : Component
 	public float StackSpacing { get; set; } = 0.06f;
 
 	[Property]
+	public float BaseLift { get; set; } = 0.08f;
+
+	[Property]
 	public int GridColumns { get; set; } = 5;
 
 	[Property]
@@ -105,17 +108,7 @@ public sealed class ZoneObject : Component
 		RegisterCurrentZoneId();
 
 		GameObject.Tags.Add( "mtg-zone" );
-		var trigger = GetOrAddComponent<BoxCollider>();
-		trigger.Scale = TriggerSize;
-		trigger.IsTrigger = true;
-
-		if ( Application.IsHeadless || !ShowMarker )
-			return;
-
-		_markerRenderer = GetOrAddComponent<ModelRenderer>();
-		SlotRenderer.BuildSlot(
-			ZoneKind,
-				MarkerResolution ).ApplyTo( _markerRenderer );
+		RefreshConfiguration();
 	}
 
 	protected override void OnStart()
@@ -271,6 +264,29 @@ public sealed class ZoneObject : Component
 		ReindexAndLayout( animate );
 	}
 
+	public void RefreshConfiguration()
+	{
+		var trigger = GetOrAddComponent<BoxCollider>();
+		trigger.Scale = TriggerSize;
+		trigger.IsTrigger = true;
+
+		if ( Application.IsHeadless )
+			return;
+
+		if ( !ShowMarker )
+		{
+			if ( _markerRenderer is not null )
+				_markerRenderer.Enabled = false;
+			return;
+		}
+
+		_markerRenderer ??= GetOrAddComponent<ModelRenderer>();
+		_markerRenderer.Enabled = true;
+		SlotRenderer.BuildSlot(
+			ZoneKind,
+			MarkerResolution ).ApplyTo( _markerRenderer );
+	}
+
 	public void RebuildMembership()
 	{
 		RequireAuthority();
@@ -296,6 +312,7 @@ public sealed class ZoneObject : Component
 		Vector3 right = rotation.Right;
 		Vector3 forward = rotation.Forward;
 		Vector3 normal = rotation.Up;
+		position += normal * BaseLift;
 
 		switch ( ActiveLayout )
 		{

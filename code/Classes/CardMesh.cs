@@ -16,7 +16,7 @@ namespace Sandbox.Classes;
 /// </summary>
 public static class CardMesh
 {
-	public const float DefaultWidth = 5.5f; // comfortable tabletop scale
+	public const float DefaultWidth = 63; // comfortable tabletop scale
 
 	/// <summary>
 	/// Current card width. Games can shrink/grow cards via <see cref="SetSize"/>; layout reads this.
@@ -51,9 +51,9 @@ public static class CardMesh
 
 	private static Model Build()
 	{
-		var placeholder = Material.Create(
+		var placeholder = CardMaterialFactory.Create(
 			"mtgsbox_card_placeholder",
-			"complex.shader",
+			Texture.White,
 			anonymous: false );
 		var mesh = new Mesh( placeholder );
 
