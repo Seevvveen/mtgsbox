@@ -106,7 +106,16 @@ public sealed class CardValueIndicators : Component
 				0f,
 				CardMesh.Thickness ),
 			new Color( 0.72f, 0.48f, 1f ),
-			_card.FlipPrintedFace,
+			() =>
+			{
+				MtgGameDirector? director =
+					Scene.Get<MtgGameDirector>();
+
+				if ( director is not null )
+					director.RequestFlipCard( _card );
+				else if ( !_card.GameObject.Network.IsProxy )
+					_card.FlipPrintedFace();
+			},
 			CardMesh.Width * 0.48f );
 	}
 

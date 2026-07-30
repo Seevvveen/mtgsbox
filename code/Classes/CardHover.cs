@@ -129,6 +129,13 @@ public sealed class CardHover : Component
 		if ( !card.IsValid() )
 			return;
 
+		if ( Scene.Get<MtgGameDirector>() is null &&
+			card.GameObject.Network.IsProxy )
+		{
+			card.Pulse();
+			return;
+		}
+
 		_dragged = card;
 		_dragOrigin = card.RestPose;
 		_dragRotation = card.WorldRotation;
@@ -139,6 +146,7 @@ public sealed class CardHover : Component
 		card.CancelThrow();
 		card.GameObject.Tags.Set( "dragging", true );
 		card.SetHover( 0f );
+		Scene.Get<MtgGameDirector>()?.RequestGrabCard( card );
 	}
 
 	private void UpdateDrag( Ray ray )
@@ -194,7 +202,16 @@ public sealed class CardHover : Component
 		if ( zone is not null && zone.CanAccept( card ) )
 		{
 			Transform dropPose = DropPose( zone, ray, card );
-			card.PlaceInZone( zone.ZoneId, dropPose );
+			MtgGameDirector? director =
+				Scene.Get<MtgGameDirector>();
+
+			if ( director is not null )
+				director.RequestMoveCard(
+					card,
+					zone.ZoneId,
+					dropPose );
+			else
+				card.PlaceInZone( zone.ZoneId, dropPose );
 		}
 		else if ( _dragVelocity.Length >= ThrowMinimumSpeed )
 		{
@@ -203,10 +220,20 @@ public sealed class CardHover : Component
 			Vector3 spin = Vector3.Cross(
 				Vector3.Up,
 				planarVelocity ) * ThrowSpinScale;
-			card.Throw( planarVelocity, spin );
+			MtgGameDirector? director =
+				Scene.Get<MtgGameDirector>();
+
+			if ( director is not null )
+				director.RequestThrowCard(
+					card,
+					planarVelocity,
+					spin );
+			else
+				card.Throw( planarVelocity, spin );
 		}
 		else
 		{
+			Scene.Get<MtgGameDirector>()?.ReleaseGrab( card );
 			card.MoveTo( _dragOrigin );
 		}
 
@@ -326,7 +353,11 @@ public sealed class CardHover : Component
 		SetHovered( null );
 
 		if (_dragged.IsValid() )
+		{
+			Scene.Get<MtgGameDirector>()?
+				.ReleaseGrab( _dragged );
 			_dragged.MoveTo( _dragOrigin );
+		}
 
 		ClearDragState();
 	}

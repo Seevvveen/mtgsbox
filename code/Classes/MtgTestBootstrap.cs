@@ -10,9 +10,8 @@ using RuntimeCardDatabase = Sandbox.Classes.Database.CardDatabase;
 namespace Sandbox.Classes;
 
 /// <summary>
-/// Small, disposable scene bootstrap for exercising card rendering, hidden
-/// information, MTG zones, layouts, shuffling, drawing, and double-faced cards.
-/// Add this component to an empty scene object and enter play mode.
+/// Starts a complete two-player test match using the real MTG director. The
+/// local connection plays against a fake player named Sparky.
 /// </summary>
 public sealed class MtgTestBootstrap : Component
 {
@@ -20,21 +19,19 @@ public sealed class MtgTestBootstrap : Component
 	public bool RunOnStart { get; set; } = true;
 
 	[Property]
-	public int LibraryCardCount { get; set; } = 12;
+	public string FakePlayerName { get; set; } = "Sparky";
 
 	[Property]
-	public float ZoneSpacing { get; set; } = 70.5f;
-
-	[Property]
-	public float CardWidth { get; set; } = 630f;
+	public float CardWidth { get; set; } = 63f;
 
 	[Property]
 	public float CardThicknessRatio { get; set; } =
 		CardMesh.DefaultThicknessRatio;
 
 	public bool HasBootstrapped { get; private set; }
+	public MtgGameDirector? Director { get; private set; }
 
-	private readonly List<GameObject> _spawnedObjects = [];
+	private GameObject? _matchObject;
 
 	protected override void OnStart()
 	{
@@ -52,293 +49,209 @@ public sealed class MtgTestBootstrap : Component
 		if ( HasBootstrapped )
 			return;
 
-		DatabaseManager? manager = Scene.Get<DatabaseManager>();
+		if ( !await WaitForDatabaseAsync() )
+			return;
 
-		if ( manager is not null )
-		{
-			DatabaseStartupState state = await manager.Completion;
-
-			if ( state != DatabaseStartupState.Ready )
-			{
-				Log.Warning(
-					"MTG test bootstrap stopped because the card " +
-					$"database entered state '{state}'." );
-				return;
-			}
-		}
-		else if ( !RuntimeCardDatabase.IsOpen )
+		if ( Connection.Local is not Connection local )
 		{
 			Log.Warning(
-				"MTG test bootstrap needs a ready DatabaseManager " +
-				"in the scene." );
+				"MTG bootstrap needs a local connection." );
 			return;
 		}
 
-		HasBootstrapped = true;
+		NormalizedCard island = RequireCard( "Island" );
+		NormalizedCard mountain = RequireCard( "Mountain" );
+		Deck localDeck = BuildDeck(
+			"Local Test Deck",
+			island,
+			mountain );
+		Deck botDeck = BuildDeck(
+			$"{FakePlayerName}'s Test Deck",
+			mountain,
+			island );
+
 		CardMesh.SetSize( CardWidth );
 		CardMesh.SetThicknessRatio( CardThicknessRatio );
 
-		// Keep zone centres outside one another even when the procedural card
-		// size is changed in the inspector.
-		float horizontalZoneSpacing = MathF.Max(
-			ZoneSpacing,
-			CardMesh.Width * 1.15f );
-		float verticalZoneSpacing = MathF.Max(
-			ZoneSpacing,
-			CardMesh.Height * 1.15f );
-
-		ZoneObject library = CreateZone(
-			"Test Library",
-			MtgZoneKind.Library,
-			new Vector3(
-				-horizontalZoneSpacing * 1.5f,
-				2f,
-				0f ) );
-		ZoneObject graveyard = CreateZone(
-			"Test Graveyard",
-			MtgZoneKind.Graveyard,
-			new Vector3(
-				-horizontalZoneSpacing * 0.5f,
-				2f,
-				0f ) );
-		ZoneObject exile = CreateZone(
-			"Test Exile",
-			MtgZoneKind.Exile,
-			new Vector3(
-				horizontalZoneSpacing * 0.5f,
-				2f,
-				0f ) );
-		ZoneObject stack = CreateZone(
-			"Test Stack",
-			MtgZoneKind.Stack,
-			new Vector3(
-				horizontalZoneSpacing * 1.5f,
-				2f,
-				0f ) );
-		ZoneObject hand = CreateZone(
-			"Test Hand",
-			MtgZoneKind.Hand,
-			new Vector3(
-				0f,
-				-verticalZoneSpacing,
-				0f ) );
-		ZoneObject battlefield = CreateZone(
-			"Test Battlefield",
-			MtgZoneKind.Battlefield,
-			new Vector3(
-				0f,
-				verticalZoneSpacing,
-				0f ) );
-
-		NormalizedCard island = RequireCard( "Island" );
-		NormalizedCard mountain = RequireCard( "Mountain" );
-		NormalizedCard lightningBolt =
-			RequireCard( "Lightning Bolt" );
-		NormalizedCard opt = RequireCard( "Opt" );
-
-		for ( int index = 0;
-			index < Math.Max( LibraryCardCount, 1 );
-			index++ )
+		_matchObject = new GameObject(
+			GameObject,
+			true,
+			"Bootstrap MTG Match" )
 		{
-			NormalizedCard definition = index % 2 == 0
-				? island
-				: mountain;
-			CardObject card = CreateCard(
-				$"Library Card {index + 1}",
-				definition );
-			library.AddCard(
-				card,
-				MtgZoneCardState.Concealed,
-				animate: false );
-		}
+			WorldPosition = WorldPosition,
+			WorldRotation = WorldRotation
+		};
+		_matchObject.Components.Create<MtgBootstrapRules>();
+		Director = _matchObject.Components
+			.Create<MtgGameDirector>();
 
-		library.Shuffle();
+		if ( Networking.IsActive )
+			_matchObject.NetworkSpawn();
 
-		for ( int index = 0; index < 4; index++ )
-		{
-			CardObject? drawn = library.DrawTop();
-
-			if ( drawn is not null )
-				hand.AddCard( drawn, MtgZoneCardState.OwnerOnly );
-		}
-
-		CardObject permanent = CreateCard(
-			"Public Lightning Bolt",
-			lightningBolt );
-		permanent.SnapTo( new Transform(
-			battlefield.WorldPosition,
-			battlefield.WorldRotation ) );
-		battlefield.AddCard(
-			permanent,
-			MtgZoneCardState.Front );
-		permanent.MoveTo( new Transform(
-			battlefield.WorldPosition +
-				battlefield.WorldRotation.Right * -4f,
-			battlefield.WorldRotation ) );
-
-		graveyard.AddCard(
-			CreateCard( "Graveyard Opt", opt ),
-			MtgZoneCardState.Front );
-		exile.AddCard(
-			CreateCard( "Exiled Lightning Bolt", lightningBolt ),
-			MtgZoneCardState.Front );
-		stack.AddCard(
-			CreateCard( "Stack Opt", opt ),
-			MtgZoneCardState.Front );
-
-		NormalizedCard? doubleFaced = FindFirstAvailable(
-			"Delver of Secrets // Insectile Aberration",
-			"Brutal Cathar // Moonrage Brute",
-			"Fable of the Mirror-Breaker // " +
-				"Reflection of Kiki-Jiki" );
-
-		if ( doubleFaced is not null &&
-			CardFaceRenderer.HasPrintedBack( doubleFaced ) )
-		{
-			CardObject transformed = CreateCard(
-				"Double-Faced Printed Back",
-				doubleFaced );
-			battlefield.AddCard(
-				transformed,
-				MtgZoneCardState.PrintedBack );
-			transformed.MoveTo( new Transform(
-				battlefield.WorldPosition +
-					battlefield.WorldRotation.Right * 4f,
-				battlefield.WorldRotation ) );
-		}
-		else
+		if ( !Director.SeatPlayer( local ) )
 		{
 			Log.Warning(
-				"MTG test bootstrap could not find a known " +
-				"double-faced printing." );
+				"MTG bootstrap could not seat the local player." );
+			ClearBootstrap();
+			return;
 		}
 
+		MtgPlayerSeat? localSeat =
+			Director.SeatOf( local.Id );
+		MtgPlayerSeat? botSeat =
+			Director.AddBotPlayer( FakePlayerName );
+
+		if ( localSeat is null || botSeat is null )
+		{
+			Log.Warning(
+				"MTG bootstrap could not create both players." );
+			ClearBootstrap();
+			return;
+		}
+
+		bool localAccepted =
+			Director.AcceptDeckAuthority(
+				localSeat,
+				localDeck );
+		bool botAccepted =
+			Director.AcceptDeckAuthority(
+				botSeat,
+				botDeck );
+
+		if ( !localAccepted || !botAccepted )
+		{
+			Log.Warning(
+				"MTG bootstrap deck validation failed: " +
+				$"local='{localSeat.DeckStatus}', " +
+				$"bot='{botSeat.DeckStatus}'." );
+			ClearBootstrap();
+			return;
+		}
+
+		Director.SetReadyAuthority( localSeat, true );
+		Director.SetReadyAuthority( botSeat, true );
+		Director.StartMatchAuthority();
+
+		if ( Director.State != MtgMatchState.Mulligan )
+		{
+			Log.Warning(
+				"MTG bootstrap did not reach the mulligan step: " +
+				Director.StatusText );
+			ClearBootstrap();
+			return;
+		}
+
+		Director.KeepOpeningHandAuthority( localSeat );
+		Director.KeepOpeningHandAuthority( botSeat );
+
+		if ( Scene.Camera is CameraComponent camera )
+		{
+			camera.GameObject.Components
+				.GetOrCreate<CardHover>();
+		}
+
+		HasBootstrapped = true;
 		Log.Info(
-			"MTG test bootstrap ready: concealed shuffled library, " +
-			"private fanned hand, public battlefield, graveyard, " +
-			"exile, stack, and double-faced back test." );
+			$"MTG bootstrap started turn {Director.TurnNumber}: " +
+			$"{localSeat.DisplayName} versus " +
+			$"{botSeat.DisplayName}. Both players have shuffled " +
+			"60-card decks and seven-card opening hands." );
 	}
 
 	public void ClearBootstrap()
 	{
-		for ( int index = _spawnedObjects.Count - 1;
-			index >= 0;
-			index-- )
-		{
-			GameObject gameObject = _spawnedObjects[index];
+		if ( _matchObject.IsValid() )
+			_matchObject.Destroy();
 
-			if ( gameObject.IsValid() )
-				gameObject.Destroy();
-		}
-
-		_spawnedObjects.Clear();
+		_matchObject = null;
+		Director = null;
 		HasBootstrapped = false;
 	}
 
-	private ZoneObject CreateZone(
-		string name,
-		MtgZoneKind kind,
-		Vector3 localOffset )
+	private async Task<bool> WaitForDatabaseAsync()
 	{
-		GameObject zoneObject = CreateObject(
-			name,
-			WorldPosition +
-				WorldRotation.Right * localOffset.x +
-				WorldRotation.Forward * localOffset.y +
-				WorldRotation.Up * localOffset.z );
-		zoneObject.WorldRotation = WorldRotation;
+		DatabaseManager? manager = Scene.Get<DatabaseManager>();
 
-		ZoneObject zone =
-			zoneObject.Components.Create<ZoneObject>();
-		zone.ZoneKind = kind;
-		zone.UseRecommendedLayout = true;
-		zone.TriggerSize = new Vector3(
-			CardMesh.Width,
-			CardMesh.Height,
-			1f );
-
-		if ( kind == MtgZoneKind.Battlefield )
+		if ( manager is not null )
 		{
-			zone.TriggerSize = new Vector3(
-				CardMesh.Width * 3.5f,
-				CardMesh.Height * 2.5f,
-				1f );
+			DatabaseStartupState state =
+				await manager.Completion;
+
+			if ( state == DatabaseStartupState.Ready )
+				return true;
+
+			Log.Warning(
+				"MTG bootstrap stopped because the database " +
+				$"entered state '{state}'." );
+			return false;
 		}
 
-		zone.RefreshConfiguration();
-		SpawnNetworkedIfNeeded( zoneObject );
-		return zone;
+		if ( RuntimeCardDatabase.IsOpen )
+			return true;
+
+		Log.Warning(
+			"MTG bootstrap needs a ready DatabaseManager." );
+		return false;
 	}
 
-	private CardObject CreateCard(
+	private static Deck BuildDeck(
 		string name,
-		NormalizedCard definition )
+		NormalizedCard first,
+		NormalizedCard second )
 	{
-		GameObject cardObject = CreateObject(
-			name,
-			WorldPosition + WorldRotation.Up * 2f );
-		cardObject.WorldRotation = WorldRotation;
-
-		CardObject card =
-			cardObject.Components.Create<CardObject>();
-		card.SetCard( definition.Gameplay.ScryfallId );
-		SpawnNetworkedIfNeeded( cardObject );
-		return card;
-	}
-
-	private GameObject CreateObject(
-		string name,
-		Vector3 position )
-	{
-		var gameObject = new GameObject(
-			GameObject,
-			true,
-			name )
+		return new Deck
 		{
-			WorldPosition = position
+			Name = name,
+			FormatCode = "bootstrap",
+			Entries =
+			[
+				new DeckEntry
+				{
+					Section = DeckSections.Main,
+					Quantity = 30,
+					Card = Reference( first )
+				},
+				new DeckEntry
+				{
+					Section = DeckSections.Main,
+					Quantity = 30,
+					Card = Reference( second )
+				}
+			]
 		};
-		_spawnedObjects.Add( gameObject );
-		return gameObject;
 	}
 
-	private static void SpawnNetworkedIfNeeded(
-		GameObject gameObject )
+	private static DeckCardReference Reference(
+		NormalizedCard card ) => new()
 	{
-		if ( Networking.IsActive )
-			gameObject.NetworkSpawn();
-	}
+		ScryfallId = card.Gameplay.ScryfallId,
+		OracleId = card.Gameplay.OracleId,
+		Name = card.Gameplay.Name,
+		SetCode = card.Set.Code,
+		CollectorNumber = card.Presentation.CollectorNumber
+	};
 
 	private static NormalizedCard RequireCard( string name )
 	{
-		return FindFirstAvailable( name )
-			?? throw new InvalidOperationException(
-				$"Test card '{name}' is not in the local database." );
-	}
+		NormalizedCard[] matches =
+			RuntimeCardDatabase.FindByName( name );
 
-	private static NormalizedCard? FindFirstAvailable(
-		params string[] names )
-	{
-		foreach ( string name in names )
+		foreach ( NormalizedCard card in matches )
 		{
-			NormalizedCard[] matches =
-				RuntimeCardDatabase.FindByName( name );
-
-			foreach ( NormalizedCard card in matches )
+			if ( string.Equals(
+				card.Source.Language,
+				"en",
+				StringComparison.OrdinalIgnoreCase ) &&
+				!card.Presentation.Digital )
 			{
-				if ( string.Equals(
-					card.Source.Language,
-					"en",
-					StringComparison.OrdinalIgnoreCase ) &&
-					!card.Presentation.Digital )
-				{
-					return card;
-				}
+				return card;
 			}
-
-			if ( matches.Length > 0 )
-				return matches[0];
 		}
 
-		return null;
+		if ( matches.Length > 0 )
+			return matches[0];
+
+		throw new InvalidOperationException(
+			$"Bootstrap card '{name}' is not in the database." );
 	}
 }

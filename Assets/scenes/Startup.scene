@@ -225,15 +225,14 @@
           "Flags": 0,
           "CardThicknessRatio": 0.004761905,
           "CardWidth": 32,
-          "LibraryCardCount": 100,
+          "FakePlayerName": "Sparky",
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "RunOnStart": true,
-          "ZoneSpacing": 50
+          "RunOnStart": true
         }
       ],
       "Children": []

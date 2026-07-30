@@ -52,6 +52,12 @@ public sealed class ZoneObject : Component
 	[Sync]
 	public int CardCount { get; set; }
 
+	[Sync]
+	public Guid OwnerPlayerId { get; set; }
+
+	[Property, Sync]
+	public string Role { get; set; } = string.Empty;
+
 	[Property]
 	public MtgZoneKind ZoneKind { get; set; } = MtgZoneKind.Library;
 
@@ -133,6 +139,24 @@ public sealed class ZoneObject : Component
 		// registry current without synchronizing the card collection itself.
 		if ( _registeredZoneId != ZoneId )
 			RegisterCurrentZoneId();
+
+		if ( GameObject.Network.IsProxy )
+			RefreshProxyMembership();
+	}
+
+	private void RefreshProxyMembership()
+	{
+		_cards.Clear();
+
+		foreach ( CardObject card
+			in Scene.GetAllComponents<CardObject>() )
+		{
+			if ( card.ZoneId == ZoneId )
+				_cards.Add( card );
+		}
+
+		_cards.Sort( (left, right) =>
+			left.StackIndex.CompareTo( right.StackIndex ) );
 	}
 
 	protected override void OnDestroy()

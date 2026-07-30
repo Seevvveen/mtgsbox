@@ -40,6 +40,18 @@ public sealed class CardObject : Component
 	[Sync]
 	public Guid ZoneId { get; set; }
 
+	[Sync]
+	public Guid OwnerPlayerId { get; set; }
+
+	[Sync]
+	public Guid ControllerPlayerId { get; set; }
+
+	[Sync]
+	public Guid GrabbedByPlayerId { get; set; }
+
+	[Sync]
+	public bool Tapped { get; set; }
+
 	/// <summary>
 	/// The printing known to this local peer, if it is entitled to know it.
 	/// </summary>
@@ -187,8 +199,8 @@ public sealed class CardObject : Component
 	{
 		if ( GameObject.Network.IsProxy )
 		{
-			FlipPrintedFaceOwner();
-			return;
+			throw new InvalidOperationException(
+				"Printed faces must be changed by card authority." );
 		}
 
 		if ( RevealedPrintingId == Guid.Empty )
@@ -200,8 +212,16 @@ public sealed class CardObject : Component
 		FaceIndex = FaceIndex == 1 ? 0 : 1;
 	}
 
-	[Rpc.Owner]
-	private void FlipPrintedFaceOwner() => FlipPrintedFace();
+	public void SetTapped( bool tapped )
+	{
+		if ( GameObject.Network.IsProxy )
+		{
+			throw new InvalidOperationException(
+				"Only card authority can change tapped state." );
+		}
+
+		Tapped = tapped;
+	}
 
 	private static void RequirePrintedBack( Guid printingId )
 	{
@@ -329,8 +349,8 @@ public sealed class CardObject : Component
 	{
 		if ( GameObject.Network.IsProxy )
 		{
-			PlaceInZoneOwner( zoneId, freeformPose );
-			return;
+			throw new InvalidOperationException(
+				"Zone placement must be performed by card authority." );
 		}
 
 		ZoneObject? zone = ZoneObject.Find( zoneId );
@@ -352,12 +372,6 @@ public sealed class CardObject : Component
 		if ( freeform )
 			MoveTo( freeformPose );
 	}
-
-	[Rpc.Owner]
-	private void PlaceInZoneOwner(
-		Guid zoneId,
-		Transform freeformPose ) =>
-		PlaceInZone( zoneId, freeformPose );
 
 	public void Throw( Vector3 velocity, Vector3 angularVelocity )
 	{
@@ -697,8 +711,13 @@ public sealed class CardObject : Component
 
 	private Rotation FaceRotation()
 	{
+		Rotation physicalRotation = Tapped
+			? Rotation.FromAxis(
+				_targetRotation.Up,
+				90f ) * _targetRotation
+			: _targetRotation;
 		return Rotation.FromAxis(
-			_targetRotation.Right,
-			_flip ) * _targetRotation;
+			physicalRotation.Right,
+			_flip ) * physicalRotation;
 	}
 }
