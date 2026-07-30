@@ -25,6 +25,9 @@ public static class CardDatabase
 		public required Stream CardDataStream { get; init; }
 		public required CardIndexEntry[] Entries { get; init; }
 		public required Dictionary<Guid, int> RecordIdByScryfallId { get; init; }
+		public required Dictionary<string, int> RecordIdByPrinting { get; init; }
+		public required Dictionary<string, List<int>> RecordIdsByName { get; init; }
+		public required Dictionary<Guid, List<int>> RecordIdsByOracleId { get; init; }
 		public required Dictionary<SymbolIdentifier, CardSymbolDefinition>
 			SymbolDefinitionById { get; init; }
 		public required Dictionary<Guid, CardSetDefinition>
@@ -130,6 +133,13 @@ public static class CardDatabase
 		CardSetDefinitionFile setFile =
 			ReadSetDefinitionFile();
 		CardRulingFile rulingFile = ReadRulingFile();
+
+		if ( indexFile.FormatVersion < 5 )
+		{
+			throw new InvalidDataException(
+				"The card database predates deck-import printing indexes " +
+				"and must be rebuilt." );
+		}
 
 		if ( symbolFile.FormatVersion != indexFile.FormatVersion ||
 			setFile.FormatVersion != indexFile.FormatVersion ||
@@ -242,6 +252,76 @@ public static class CardDatabase
 			}
 
 			mappedRecordIds[mapping.RecordId] = true;
+		}
+
+		var loadedPrintings = new Dictionary<string, int>(
+			indexFile.PrintingMappings.Count,
+			StringComparer.OrdinalIgnoreCase );
+
+		foreach ( CardPrintingMapping mapping in indexFile.PrintingMappings )
+		{
+			ValidateLookupRecordId(
+				mapping.RecordId,
+				loadedEntries.Length,
+				"printing" );
+
+			string key = CreatePrintingKey(
+				mapping.SetCode,
+				mapping.CollectorNumber );
+
+			if ( !loadedPrintings.TryAdd( key, mapping.RecordId ) )
+			{
+				throw new InvalidDataException(
+					$"Duplicate set/collector printing mapping: " +
+					$"'{mapping.SetCode}' '{mapping.CollectorNumber}'." );
+			}
+		}
+
+		var loadedNames = new Dictionary<string, List<int>>(
+			StringComparer.OrdinalIgnoreCase );
+
+		foreach ( CardNameMapping mapping in indexFile.NameMappings )
+		{
+			ValidateLookupRecordId(
+				mapping.RecordId,
+				loadedEntries.Length,
+				"name" );
+
+			string name = NormalizeLookupName( mapping.Name );
+
+			if ( !loadedNames.TryGetValue( name, out List<int>? recordIds ) )
+			{
+				recordIds = [];
+				loadedNames.Add( name, recordIds );
+			}
+
+			recordIds.Add( mapping.RecordId );
+		}
+
+		var loadedOraclePrintings = new Dictionary<Guid, List<int>>();
+
+		foreach ( CardOracleMapping mapping in indexFile.OracleMappings )
+		{
+			if ( mapping.OracleId == Guid.Empty )
+			{
+				throw new InvalidDataException(
+					"Card index contains an empty Oracle ID mapping." );
+			}
+
+			ValidateLookupRecordId(
+				mapping.RecordId,
+				loadedEntries.Length,
+				"Oracle" );
+
+			if ( !loadedOraclePrintings.TryGetValue(
+				mapping.OracleId,
+				out List<int>? recordIds ) )
+			{
+				recordIds = [];
+				loadedOraclePrintings.Add( mapping.OracleId, recordIds );
+			}
+
+			recordIds.Add( mapping.RecordId );
 		}
 
 		if ( symbolFile.Symbols.Count != symbolFile.SymbolCount )
@@ -381,6 +461,9 @@ public static class CardDatabase
 				CardDataStream = dataStream,
 				Entries = loadedEntries,
 				RecordIdByScryfallId = loadedMappings,
+				RecordIdByPrinting = loadedPrintings,
+				RecordIdsByName = loadedNames,
+				RecordIdsByOracleId = loadedOraclePrintings,
 				SymbolDefinitionById = loadedSymbolDefinitions,
 				SetDefinitionById = loadedSetsById,
 				SetDefinitionByCode = loadedSetsByCode,
@@ -481,6 +564,81 @@ public static class CardDatabase
 	{
 		card = GetCard( scryfallId );
 		return card is not null;
+	}
+
+	/// <summary>
+	/// Retrieves one exact printing by Scryfall set code and collector number.
+	/// Collector numbers are strings and may contain letters, hyphens, or stars.
+	/// </summary>
+	public static NormalizedCard? FindPrinting(
+		string setCode,
+		string collectorNumber )
+	{
+		int recordId;
+
+		lock ( StateLock )
+		{
+			DatabaseState state = GetOpenState();
+			string key = CreatePrintingKey( setCode, collectorNumber );
+
+			if ( !state.RecordIdByPrinting.TryGetValue( key, out recordId ) )
+				return null;
+		}
+
+		return GetCard( recordId );
+	}
+
+	/// <summary>
+	/// Returns every printing whose canonical card name exactly matches.
+	/// Name matching ignores case and surrounding whitespace.
+	/// </summary>
+	public static NormalizedCard[] FindByName( string name )
+	{
+		int[] recordIds;
+
+		lock ( StateLock )
+		{
+			DatabaseState state = GetOpenState();
+			string normalized = NormalizeLookupName( name );
+
+			if ( !state.RecordIdsByName.TryGetValue(
+				normalized,
+				out List<int>? matches ) )
+			{
+				return [];
+			}
+
+			recordIds = [.. matches];
+		}
+
+		return ReadCards( recordIds );
+	}
+
+	/// <summary>
+	/// Returns all known printings for an Oracle card identity.
+	/// </summary>
+	public static NormalizedCard[] GetPrintings( Guid oracleId )
+	{
+		if ( oracleId == Guid.Empty )
+			return [];
+
+		int[] recordIds;
+
+		lock ( StateLock )
+		{
+			DatabaseState state = GetOpenState();
+
+			if ( !state.RecordIdsByOracleId.TryGetValue(
+				oracleId,
+				out List<int>? matches ) )
+			{
+				return [];
+			}
+
+			recordIds = [.. matches];
+		}
+
+		return ReadCards( recordIds );
 	}
 
 	/// <summary>
@@ -626,6 +784,47 @@ public static class CardDatabase
 		}
 	}
 
+	private static NormalizedCard[] ReadCards( int[] recordIds )
+	{
+		var cards = new NormalizedCard[recordIds.Length];
+
+		for ( int index = 0; index < recordIds.Length; index++ )
+			cards[index] = GetCard( recordIds[index] );
+
+		return cards;
+	}
+
+	private static string CreatePrintingKey(
+		string setCode,
+		string collectorNumber )
+	{
+		ArgumentException.ThrowIfNullOrWhiteSpace( setCode );
+		ArgumentException.ThrowIfNullOrWhiteSpace( collectorNumber );
+
+		return $"{setCode.Trim()}\u001F{collectorNumber.Trim()}";
+	}
+
+	private static string NormalizeLookupName( string name )
+	{
+		ArgumentException.ThrowIfNullOrWhiteSpace( name );
+
+		int newline = name.IndexOfAny( ['\r', '\n'] );
+		string firstLine = newline < 0 ? name : name[..newline];
+		return firstLine.Trim();
+	}
+
+	private static void ValidateLookupRecordId(
+		int recordId,
+		int recordCount,
+		string mappingKind )
+	{
+		if ( recordId < 0 || recordId >= recordCount )
+		{
+			throw new InvalidDataException(
+				$"Invalid record ID {recordId} in {mappingKind} mapping." );
+		}
+	}
+
 	public static void Shutdown()
 	{
 		DatabaseState? state;
@@ -724,8 +923,7 @@ public static class CardDatabase
 		NormalizedCard? card =
 			JsonSerializer.Deserialize<NormalizedCard>(
 				bytes,
-				state.FormatVersion <
-					DatabaseFileInfo.CurrentFormatVersion
+				state.FormatVersion <= 3
 					? DatabaseFileInfo.LegacyDatabaseJsonOptions
 					: DatabaseFileInfo.DatabaseJsonOptions
 			);
@@ -1012,7 +1210,7 @@ public static class CardDatabase
 		ValidateFormatVersion( formatVersion, fileDescription );
 
 		JsonSerializerOptions options =
-			formatVersion < DatabaseFileInfo.CurrentFormatVersion
+			formatVersion <= 3
 				? DatabaseFileInfo.LegacyDatabaseJsonOptions
 				: DatabaseFileInfo.DatabaseJsonOptions;
 

@@ -16,6 +16,25 @@ public readonly record struct CardIdMapping
 	public int RecordId { get; init; }
 }
 
+public readonly record struct CardPrintingMapping
+{
+	public required string SetCode { get; init; }
+	public required string CollectorNumber { get; init; }
+	public int RecordId { get; init; }
+}
+
+public readonly record struct CardNameMapping
+{
+	public required string Name { get; init; }
+	public int RecordId { get; init; }
+}
+
+public readonly record struct CardOracleMapping
+{
+	public Guid OracleId { get; init; }
+	public int RecordId { get; init; }
+}
+
 /// <summary>
 /// The root object stored in card-index.json.
 /// </summary>
@@ -26,6 +45,9 @@ public sealed record CardIndexFile
 
 	public List<CardIndexEntry> Cards { get; init; } = [];
 	public List<CardIdMapping> IdMappings { get; init; } = [];
+	public List<CardPrintingMapping> PrintingMappings { get; init; } = [];
+	public List<CardNameMapping> NameMappings { get; init; } = [];
+	public List<CardOracleMapping> OracleMappings { get; init; } = [];
 }
 
 public sealed record CardSymbolDefinitionFile

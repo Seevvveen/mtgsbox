@@ -44,6 +44,9 @@ public static class DatabaseBuilder
 
 		List<CardIndexEntry> indexEntries = [];
 		List<CardIdMapping> idMappings = [];
+		List<CardPrintingMapping> printingMappings = [];
+		List<CardNameMapping> nameMappings = [];
+		List<CardOracleMapping> oracleMappings = [];
 
 		ReadJsonLines<ScryfallCardDto>(
 			input,
@@ -94,6 +97,28 @@ public static class DatabaseBuilder
 					ScryfallId = card.Gameplay.ScryfallId,
 					RecordId = recordId
 				});
+
+				printingMappings.Add( new CardPrintingMapping
+				{
+					SetCode = card.Set.Code,
+					CollectorNumber = card.Presentation.CollectorNumber,
+					RecordId = recordId
+				});
+
+				nameMappings.Add( new CardNameMapping
+				{
+					Name = card.Gameplay.Name,
+					RecordId = recordId
+				});
+
+				if ( card.Gameplay.OracleId is Guid oracleId )
+				{
+					oracleMappings.Add( new CardOracleMapping
+					{
+						OracleId = oracleId,
+						RecordId = recordId
+					});
+				}
 			},
 			DatabaseFileInfo.ImportJsonOptions,
 			cancellationToken
@@ -107,7 +132,10 @@ public static class DatabaseBuilder
 			FormatVersion = DatabaseFileInfo.CurrentFormatVersion,
 			CardCount = indexEntries.Count,
 			Cards = indexEntries,
-			IdMappings = idMappings
+			IdMappings = idMappings,
+			PrintingMappings = printingMappings,
+			NameMappings = nameMappings,
+			OracleMappings = oracleMappings
 		};
 
 		cancellationToken.ThrowIfCancellationRequested();

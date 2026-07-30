@@ -10,7 +10,7 @@ namespace Sandbox.Classes.CardDatabase;
 /// </summary>
 internal static class DatabaseFileInfo
 {
-	public const string SourceFile = "oracle-cards.json";
+	public const string SourceFile = "default-cards.json";
 	public const string RulingsSourceFile = "rulings.json";
 	public const string SetSourceFile = "sets.json";
 	public const string SymbolSourceFile = "symbology.json";
@@ -26,8 +26,8 @@ internal static class DatabaseFileInfo
 	public const int MaxCardRecordBytes = 4 * 1024 * 1024;
 
 	// Version 4 stores domain enums by stable names rather than declaration
-	// positions, so inserting a new enum member cannot reinterpret old data.
-	public const int CurrentFormatVersion = 4;
+	// positions. Version 5 adds deck-import lookup indexes.
+	public const int CurrentFormatVersion = 5;
 	public const int OldestReadableFormatVersion = 3;
 
 	public static readonly JsonSerializerOptions ImportJsonOptions = new()

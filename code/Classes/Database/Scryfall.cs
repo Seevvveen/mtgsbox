@@ -13,7 +13,7 @@ namespace Sandbox.Classes.Database;
 public sealed class Scryfall
 {
 	private const string Api = "https://api.scryfall.com";
-	private const string CardMetaFile = "oracle-meta.txt";
+	private const string CardMetaFile = "default-cards-meta.txt";
 	private const string RulingsMetaFile = "rulings-meta.txt";
 
 	public static Scryfall Client { get; } = new();
@@ -56,7 +56,7 @@ public sealed class Scryfall
 		bool force = false )
 	{
 		return UpdateBulkFile(
-			"oracle-cards",
+			"default-cards",
 			DatabaseFileInfo.SourceFile,
 			CardMetaFile,
 			cancellationToken,
