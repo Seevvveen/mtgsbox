@@ -28,6 +28,10 @@ public sealed class MtgTestBootstrap : Component
 	[Property]
 	public float CardWidth { get; set; } = 630f;
 
+	[Property]
+	public float CardThicknessRatio { get; set; } =
+		CardMesh.DefaultThicknessRatio;
+
 	public bool HasBootstrapped { get; private set; }
 
 	private readonly List<GameObject> _spawnedObjects = [];
@@ -72,31 +76,59 @@ public sealed class MtgTestBootstrap : Component
 
 		HasBootstrapped = true;
 		CardMesh.SetSize( CardWidth );
+		CardMesh.SetThicknessRatio( CardThicknessRatio );
+
+		// Keep zone centres outside one another even when the procedural card
+		// size is changed in the inspector.
+		float horizontalZoneSpacing = MathF.Max(
+			ZoneSpacing,
+			CardMesh.Width * 1.15f );
+		float verticalZoneSpacing = MathF.Max(
+			ZoneSpacing,
+			CardMesh.Height * 1.15f );
 
 		ZoneObject library = CreateZone(
 			"Test Library",
 			MtgZoneKind.Library,
-			new Vector3( -ZoneSpacing * 1.5f, 2f, 0f ) );
+			new Vector3(
+				-horizontalZoneSpacing * 1.5f,
+				2f,
+				0f ) );
 		ZoneObject graveyard = CreateZone(
 			"Test Graveyard",
 			MtgZoneKind.Graveyard,
-			new Vector3( -ZoneSpacing * 0.5f, 2f, 0f ) );
+			new Vector3(
+				-horizontalZoneSpacing * 0.5f,
+				2f,
+				0f ) );
 		ZoneObject exile = CreateZone(
 			"Test Exile",
 			MtgZoneKind.Exile,
-			new Vector3( ZoneSpacing * 0.5f, 2f, 0f ) );
+			new Vector3(
+				horizontalZoneSpacing * 0.5f,
+				2f,
+				0f ) );
 		ZoneObject stack = CreateZone(
 			"Test Stack",
 			MtgZoneKind.Stack,
-			new Vector3( ZoneSpacing * 1.5f, 2f, 0f ) );
+			new Vector3(
+				horizontalZoneSpacing * 1.5f,
+				2f,
+				0f ) );
 		ZoneObject hand = CreateZone(
 			"Test Hand",
 			MtgZoneKind.Hand,
-			new Vector3( 0f, -ZoneSpacing, 0f ) );
+			new Vector3(
+				0f,
+				-verticalZoneSpacing,
+				0f ) );
 		ZoneObject battlefield = CreateZone(
 			"Test Battlefield",
 			MtgZoneKind.Battlefield,
-			new Vector3( 0f, ZoneSpacing, 0f ) );
+			new Vector3(
+				0f,
+				verticalZoneSpacing,
+				0f ) );
 
 		NormalizedCard island = RequireCard( "Island" );
 		NormalizedCard mountain = RequireCard( "Mountain" );

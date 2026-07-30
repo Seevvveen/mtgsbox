@@ -17,16 +17,22 @@ namespace Sandbox.Classes;
 public static class CardMesh
 {
 	public const float DefaultWidth = 63; // comfortable tabletop scale
+	public const float DefaultThickness = 1f;
+	public const float DefaultThicknessRatio =
+		DefaultThickness / DefaultWidth;
 
 	/// <summary>
 	/// Current card width. Games can shrink/grow cards via <see cref="SetSize"/>; layout reads this.
 	/// </summary>
 	public static float Width { get; private set; } = DefaultWidth;
 	public static float Height => Width / CardFaceRenderer.Aspect;
+	public static float ThicknessRatio { get; private set; } =
+		DefaultThicknessRatio;
+	public static float Thickness => Width * ThicknessRatio;
 	private static float CornerRadius => Width * 0.08f;
 
 	private const int CornerSegments = 6;     // smoothness of each rounded corner
-	private const float HalfThickness = 0.025f; // half the card's thickness (the side rim spans both faces)
+	private static float HalfThickness => Thickness * 0.5f;
 	private const float EdgeBevel = 0.45f;    // how much the rim normal tilts toward the faces (soft rounded-edge highlight)
 	private static readonly Vector4 RimUv = new( 0.004f, 0.5f, 0, 0 ); // sample the face-colour border for the edge
 
@@ -47,6 +53,21 @@ public static class CardMesh
 		if ( MathF.Abs( width - Width ) < 0.001f ) return;
 		Width = width;
 		_shared = null; // rebuild at the new size
+	}
+
+	/// <summary>
+	/// Sets thickness as a proportion of width. The actual thickness is
+	/// recalculated automatically whenever the card width changes.
+	/// </summary>
+	public static void SetThicknessRatio( float ratio )
+	{
+		ratio = MathF.Max( ratio, 0.0001f );
+
+		if ( MathF.Abs( ratio - ThicknessRatio ) < 0.00001f )
+			return;
+
+		ThicknessRatio = ratio;
+		_shared = null;
 	}
 
 	private static Model Build()
@@ -70,7 +91,9 @@ public static class CardMesh
 
 		mesh.CreateVertexBuffer( verts.Count, verts );
 		mesh.CreateIndexBuffer( indices.Count, indices );
-		mesh.Bounds = BBox.FromPositionAndSize( Vector3.Zero, new Vector3( Width, Height, HalfThickness * 2 ) );
+		mesh.Bounds = BBox.FromPositionAndSize(
+			Vector3.Zero,
+			new Vector3( Width, Height, Thickness ) );
 
 		return Model.Builder.AddMesh( mesh ).Create();
 	}

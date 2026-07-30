@@ -109,7 +109,7 @@ public sealed class CardObject : Component
 		collider.Scale = new Vector3(
 			CardMesh.Width,
 			CardMesh.Height,
-			0.1f );
+			CardMesh.Thickness );
 
 		_easedPosition = _targetPosition = WorldPosition;
 		_targetRotation = WorldRotation;
@@ -309,6 +309,45 @@ public sealed class CardObject : Component
 
 	[Rpc.Owner]
 	private void SnapToOwner( Transform pose ) => SnapTo( pose );
+
+	/// <summary>
+	/// Requests an authoritative move into an MTG zone. Non-freeform zones
+	/// choose their own layout pose; freeform zones keep the supplied drop
+	/// position and align the card to the zone.
+	/// </summary>
+	public void PlaceInZone( Guid zoneId, Transform freeformPose )
+	{
+		if ( GameObject.Network.IsProxy )
+		{
+			PlaceInZoneOwner( zoneId, freeformPose );
+			return;
+		}
+
+		ZoneObject? zone = ZoneObject.Find( zoneId );
+
+		if ( zone is null || !zone.CanAccept( this ) )
+		{
+			MoveTo( RestPose );
+			Pulse();
+			return;
+		}
+
+		bool freeform =
+			zone.ActiveLayout == MtgZoneLayout.Freeform;
+		zone.AddCard(
+			this,
+			MtgZoneCardState.ZoneDefault,
+			animate: !freeform );
+
+		if ( freeform )
+			MoveTo( freeformPose );
+	}
+
+	[Rpc.Owner]
+	private void PlaceInZoneOwner(
+		Guid zoneId,
+		Transform freeformPose ) =>
+		PlaceInZone( zoneId, freeformPose );
 
 	public void Throw( Vector3 velocity, Vector3 angularVelocity )
 	{

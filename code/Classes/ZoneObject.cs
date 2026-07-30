@@ -67,6 +67,14 @@ public sealed class ZoneObject : Component
 	[Property]
 	public float StackSpacing { get; set; } = 0.06f;
 
+	/// <summary>
+	/// Minimum visible separation between cards in physical pile zones,
+	/// expressed as a fraction of card width. This keeps piles readable when
+	/// the shared procedural card size is changed.
+	/// </summary>
+	[Property]
+	public float VisibleStackSpacingRatio { get; set; } = 0.0015f;
+
 	[Property]
 	public float BaseLift { get; set; } = 0.08f;
 
@@ -317,7 +325,8 @@ public sealed class ZoneObject : Component
 		switch ( ActiveLayout )
 		{
 			case MtgZoneLayout.Stack:
-				position += normal * (index * StackSpacing);
+				position += normal *
+					(index * EffectiveStackSpacing());
 				break;
 
 			case MtgZoneLayout.Row:
@@ -361,6 +370,26 @@ public sealed class ZoneObject : Component
 		}
 
 		return new Transform( position, rotation );
+	}
+
+	private float EffectiveStackSpacing()
+	{
+		float spacing = MathF.Max( StackSpacing, 0f );
+
+		if ( ZoneKind is MtgZoneKind.Library or
+			MtgZoneKind.Graveyard or
+			MtgZoneKind.Exile )
+		{
+			spacing = MathF.Max(
+				spacing,
+				CardMesh.Width *
+					MathF.Max( VisibleStackSpacingRatio, 0f ) );
+			spacing = MathF.Max(
+				spacing,
+				CardMesh.Thickness * 1.05f );
+		}
+
+		return spacing;
 	}
 
 	private bool RemoveCard(
