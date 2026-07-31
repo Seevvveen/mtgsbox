@@ -1,28 +1,20 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 namespace Sandbox.Classes.Cards.Colors.Util;
 
 #nullable enable
 
-
-internal static class ScryfallSetJsonReader
+static class ScryfallSetJsonReader
 {
-	public static T ReadArray<T>(
-		ref Utf8JsonReader reader,
-		T empty,
-		Func<string, T> parseSymbol,
-		Func<T, T, T> union,
-		string typeName )
+	public static T ReadArray<T>( ref Utf8JsonReader reader, T empty, Func<string, T> parseSymbol, Func<T, T, T> union, string typeName )
 	{
 		if ( reader.TokenType != JsonTokenType.StartArray )
 		{
-			throw new JsonException(
-				$"Expected a JSON array for {typeName}." );
+			throw new JsonException( $"Expected a JSON array for {typeName}." );
 		}
 
-		var result = empty;
+		T result = empty;
 
 		while ( reader.Read() )
 		{
@@ -34,10 +26,7 @@ internal static class ScryfallSetJsonReader
 
 			try
 			{
-				string symbol =
-					reader.GetString()
-					?? throw new JsonException(
-						$"{typeName} entries cannot be null." );
+				string symbol = reader.GetString() ?? throw new JsonException( $"{typeName} entries cannot be null." );
 
 				result = union( result, parseSymbol( symbol ) );
 			}
@@ -47,15 +36,15 @@ internal static class ScryfallSetJsonReader
 			}
 		}
 
-		throw new JsonException(
-			$"Unexpected end of JSON while reading {typeName}." );
+		throw new JsonException( $"Unexpected end of JSON while reading {typeName}." );
 	}
+
 
 	public static void WriteArray( Utf8JsonWriter writer, string[] symbols )
 	{
 		writer.WriteStartArray();
 
-		foreach ( var symbol in symbols )
+		foreach ( string symbol in symbols )
 			writer.WriteStringValue( symbol );
 
 		writer.WriteEndArray();
@@ -63,32 +52,19 @@ internal static class ScryfallSetJsonReader
 }
 
 /// <summary>
-/// Serializes ColorSet as a Scryfall-compatible JSON color array.
+///     Serializes ColorSet as a Scryfall-compatible JSON color array.
 /// </summary>
 public sealed class ColorSetJsonConverter : JsonConverter<ColorSet>
 {
-	public override ColorSet Read( ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options )
-	{
-		return ScryfallSetJsonReader.ReadArray(
-			ref reader,
-			ColorSet.Colorless,
-			ColorSet.FromScryfallSymbol,
-			(current, next) => current.Union( next ),
-			nameof( ColorSet ) );
-	}
+	public override ColorSet Read( ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options ) { return ScryfallSetJsonReader.ReadArray( ref reader, ColorSet.Colorless, ColorSet.FromScryfallSymbol, ( current, next ) => current.Union( next ), nameof(ColorSet) ); }
 
-	public override void Write(
-		Utf8JsonWriter writer,
-		ColorSet value,
-		JsonSerializerOptions options )
-	{
-		ScryfallSetJsonReader.WriteArray( writer, value.ToScryfallArray() );
-	}
+
+	public override void Write( Utf8JsonWriter writer, ColorSet value, JsonSerializerOptions options ) { ScryfallSetJsonReader.WriteArray( writer, value.ToScryfallArray() ); }
 }
 
 /// <summary>
-/// Serializes ProducedManaSet as a Scryfall-compatible JSON produced_mana
-/// array.
+///     Serializes ProducedManaSet as a Scryfall-compatible JSON produced_mana
+///     array.
 /// </summary>
 public sealed class ProducedManaSetJsonConverter : JsonConverter<ProducedManaSet>
 {
@@ -96,11 +72,10 @@ public sealed class ProducedManaSetJsonConverter : JsonConverter<ProducedManaSet
 	{
 		if ( reader.TokenType != JsonTokenType.StartArray )
 		{
-			throw new JsonException(
-				$"Expected a JSON array for {nameof( ProducedManaSet )}." );
+			throw new JsonException( $"Expected a JSON array for {nameof(ProducedManaSet)}." );
 		}
 
-		var values = new List<string>();
+		List<string> values = new List<string>();
 
 		while ( reader.Read() )
 		{
@@ -108,46 +83,29 @@ public sealed class ProducedManaSetJsonConverter : JsonConverter<ProducedManaSet
 			{
 				try
 				{
-					return ProducedManaSet.FromScryfall(
-						values.ToArray() );
+					return ProducedManaSet.FromScryfall( values.ToArray() );
 				}
 				catch ( ArgumentException exception )
 				{
-					throw new JsonException(
-						exception.Message,
-						exception );
+					throw new JsonException( exception.Message, exception );
 				}
 				catch ( FormatException exception )
 				{
-					throw new JsonException(
-						exception.Message,
-						exception );
+					throw new JsonException( exception.Message, exception );
 				}
 			}
 
 			if ( reader.TokenType != JsonTokenType.String )
 			{
-				throw new JsonException(
-					$"{nameof( ProducedManaSet )} entries must be strings." );
+				throw new JsonException( $"{nameof(ProducedManaSet)} entries must be strings." );
 			}
 
-			values.Add(
-				reader.GetString()
-				?? throw new JsonException(
-					$"{nameof( ProducedManaSet )} entries cannot be null." ) );
+			values.Add( reader.GetString() ?? throw new JsonException( $"{nameof(ProducedManaSet)} entries cannot be null." ) );
 		}
 
-		throw new JsonException(
-			"Unexpected end of JSON while reading " +
-			$"{nameof( ProducedManaSet )}." );
+		throw new JsonException( "Unexpected end of JSON while reading " + $"{nameof(ProducedManaSet)}." );
 	}
 
-	public override void Write(
-		Utf8JsonWriter writer,
-		ProducedManaSet value,
-		JsonSerializerOptions options )
-	{
-		ScryfallSetJsonReader.WriteArray( writer, value.ToScryfallArray() );
-	}
+
+	public override void Write( Utf8JsonWriter writer, ProducedManaSet value, JsonSerializerOptions options ) { ScryfallSetJsonReader.WriteArray( writer, value.ToScryfallArray() ); }
 }
-

@@ -23,4 +23,3 @@ public enum ArtifactSubtype
 	Vehicle,
 	Spacecraft
 }
-

@@ -8,5 +8,3 @@ public enum MagicColor : byte
 	Red,
 	Green
 }
-
-

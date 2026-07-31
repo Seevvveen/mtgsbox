@@ -1,27 +1,20 @@
 #nullable enable
 
 using System;
-
 namespace Sandbox.Classes;
 
 /// <summary>
-/// Creates the simple, non-metallic complex materials used by cards and zone
-/// markers. Runtime-created complex materials do not inherit the neutral
-/// texture inputs that an authored .vmat normally supplies.
+///     Creates the simple, non-metallic complex materials used by cards and zone
+///     markers. Runtime-created complex materials do not inherit the neutral
+///     texture inputs that an authored .vmat normally supplies.
 /// </summary>
-internal static class CardMaterialFactory
+static class CardMaterialFactory
 {
-	public static Material Create(
-		string name,
-		Texture color,
-		bool anonymous = true )
+	public static Material Create( string name, Texture color, bool anonymous = true )
 	{
 		ArgumentNullException.ThrowIfNull( color );
 
-		Material material = Material.Create(
-			name,
-			"complex.shader",
-			anonymous );
+		Material material = Material.Create( name, "complex.shader", anonymous );
 
 		material.Set( "g_tColor", color );
 

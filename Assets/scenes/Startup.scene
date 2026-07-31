@@ -236,6 +236,24 @@
         }
       ],
       "Children": []
+    },
+    {
+      "__guid": "23d60bc2-0f94-4d83-8f59-f0ff000e36f7",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Object",
+      "Position": "-31.7967224,5.99929476,-12.0353088",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [],
+      "Children": []
     }
   ],
   "SceneProperties": {

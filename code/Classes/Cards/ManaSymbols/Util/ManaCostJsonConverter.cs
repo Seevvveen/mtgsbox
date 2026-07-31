@@ -4,20 +4,17 @@ using System.Text.Json.Serialization;
 namespace Sandbox.Classes.Cards.ManaSymbols.Util;
 
 /// <summary>
-/// Stores ManaCost as its canonical Scryfall string.
-/// Example: "{2}{W}{W}".
+///     Stores ManaCost as its canonical Scryfall string.
+///     Example: "{2}{W}{W}".
 /// </summary>
 public sealed class ManaCostJsonConverter : JsonConverter<ManaCost>
 {
-	public override ManaCost Read(
-		ref Utf8JsonReader reader,
-		Type typeToConvert,
-		JsonSerializerOptions options )
+	public override ManaCost Read( ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options )
 	{
 		if ( reader.TokenType != JsonTokenType.String )
 			throw new JsonException( "Expected a mana-cost string." );
 
-		var value = reader.GetString();
+		string value = reader.GetString();
 
 		if ( value is null )
 			throw new JsonException( "Mana-cost string cannot be null." );
@@ -32,11 +29,6 @@ public sealed class ManaCostJsonConverter : JsonConverter<ManaCost>
 		}
 	}
 
-	public override void Write(
-		Utf8JsonWriter writer,
-		ManaCost value,
-		JsonSerializerOptions options )
-	{
-		writer.WriteStringValue( value.ToString() );
-	}
+
+	public override void Write( Utf8JsonWriter writer, ManaCost value, JsonSerializerOptions options ) { writer.WriteStringValue( value.ToString() ); }
 }

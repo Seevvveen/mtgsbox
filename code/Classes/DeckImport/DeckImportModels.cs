@@ -1,8 +1,6 @@
 #nullable enable
 
 using System;
-using System.Collections.Generic;
-
 namespace Sandbox.Classes.DeckImport;
 
 public enum DeckImportIssueSeverity
@@ -25,43 +23,53 @@ public enum DeckImportIssueCode
 
 public sealed record DeckImportIssue
 {
-	public DeckImportIssueSeverity Severity { get; init; }
-	public DeckImportIssueCode Code { get; init; }
-	public int? LineNumber { get; init; }
-	public string? RawText { get; init; }
-	public required string Message { get; init; }
+	public          DeckImportIssueSeverity Severity   { get; init; }
+	public          DeckImportIssueCode     Code       { get; init; }
+	public          int?                    LineNumber { get; init; }
+	public          string?                 RawText    { get; init; }
+	public required string                  Message    { get; init; }
 }
 
 public sealed record DeckImportResult
 {
-	public required Deck Deck { get; init; }
-	public List<DeckImportIssue> Issues { get; init; } = [];
+	public required Deck                  Deck   { get; init; }
+	public          List<DeckImportIssue> Issues { get; init; } = [ ];
 
-	public bool HasErrors => Issues.Exists(
-		issue => issue.Severity == DeckImportIssueSeverity.Error );
+	public bool HasErrors
+	{
+		get { return Issues.Exists( issue => issue.Severity == DeckImportIssueSeverity.Error ); }
+	}
 }
 
 public sealed record DeckImportOptions
 {
-	public string DeckName { get; init; } = "Imported Deck";
-	public string? FormatCode { get; init; }
-	public DeckSource? Source { get; init; }
+	public string      DeckName   { get; init; } = "Imported Deck";
+	public string?     FormatCode { get; init; }
+	public DeckSource? Source     { get; init; }
 }
 
 public readonly record struct DeckCardQuery
 {
-	public Guid? ScryfallId { get; init; }
-	public required string Name { get; init; }
-	public string? SetCode { get; init; }
-	public string? CollectorNumber { get; init; }
+	public          Guid?   ScryfallId      { get; init; }
+	public required string  Name            { get; init; }
+	public          string? SetCode         { get; init; }
+	public          string? CollectorNumber { get; init; }
 }
 
 public sealed record DeckCardResolution
 {
-	public DeckCardReference? Card { get; init; }
-	public int MatchCount { get; init; }
-	public bool IsResolved => Card is not null;
-	public bool IsAmbiguous => MatchCount > 1;
+	public DeckCardReference? Card       { get; init; }
+	public int                MatchCount { get; init; }
+
+	public bool IsResolved
+	{
+		get { return Card is not null; }
+	}
+
+	public bool IsAmbiguous
+	{
+		get { return MatchCount > 1; }
+	}
 }
 
 public interface IDeckCardResolver

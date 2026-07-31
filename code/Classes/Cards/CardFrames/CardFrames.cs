@@ -6,5 +6,5 @@ public enum CardFrame
 	Frame1997 = 1,
 	Frame2003 = 2,
 	Frame2015 = 3,
-	Future = 4
+	Future    = 4
 }

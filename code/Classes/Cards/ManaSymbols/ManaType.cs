@@ -7,5 +7,5 @@ public enum ManaType : byte
 	Black,
 	Red,
 	Green,
-	Colorless,
+	Colorless
 }

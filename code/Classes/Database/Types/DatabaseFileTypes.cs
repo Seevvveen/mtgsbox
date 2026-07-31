@@ -2,71 +2,71 @@
 namespace Sandbox.Classes.Database.Types;
 
 /// <summary>
-/// Describes where one card is stored inside cards.dat.
+///     Describes where one card is stored inside cards.dat.
 /// </summary>
 public readonly record struct CardIndexEntry
 {
 	public long Offset { get; init; }
-	public int Length { get; init; }
+	public int  Length { get; init; }
 }
 
 public readonly record struct CardIdMapping
 {
 	public Guid ScryfallId { get; init; }
-	public int RecordId { get; init; }
+	public int  RecordId   { get; init; }
 }
 
 public readonly record struct CardPrintingMapping
 {
-	public required string SetCode { get; init; }
+	public required string SetCode         { get; init; }
 	public required string CollectorNumber { get; init; }
-	public int RecordId { get; init; }
+	public          int    RecordId        { get; init; }
 }
 
 public readonly record struct CardNameMapping
 {
-	public required string Name { get; init; }
-	public int RecordId { get; init; }
+	public required string Name     { get; init; }
+	public          int    RecordId { get; init; }
 }
 
 public readonly record struct CardOracleMapping
 {
 	public Guid OracleId { get; init; }
-	public int RecordId { get; init; }
+	public int  RecordId { get; init; }
 }
 
 /// <summary>
-/// The root object stored in card-index.json.
+///     The root object stored in card-index.json.
 /// </summary>
 public sealed record CardIndexFile
 {
 	public int FormatVersion { get; init; }
-	public int CardCount { get; init; }
+	public int CardCount     { get; init; }
 
-	public List<CardIndexEntry> Cards { get; init; } = [];
-	public List<CardIdMapping> IdMappings { get; init; } = [];
-	public List<CardPrintingMapping> PrintingMappings { get; init; } = [];
-	public List<CardNameMapping> NameMappings { get; init; } = [];
-	public List<CardOracleMapping> OracleMappings { get; init; } = [];
+	public List<CardIndexEntry>      Cards            { get; init; } = [ ];
+	public List<CardIdMapping>       IdMappings       { get; init; } = [ ];
+	public List<CardPrintingMapping> PrintingMappings { get; init; } = [ ];
+	public List<CardNameMapping>     NameMappings     { get; init; } = [ ];
+	public List<CardOracleMapping>   OracleMappings   { get; init; } = [ ];
 }
 
 public sealed record CardSymbolDefinitionFile
 {
-	public int FormatVersion { get; init; }
-	public int SymbolCount { get; init; }
-	public List<CardSymbolDefinition> Symbols { get; init; } = [];
+	public int                        FormatVersion { get; init; }
+	public int                        SymbolCount   { get; init; }
+	public List<CardSymbolDefinition> Symbols       { get; init; } = [ ];
 }
 
 public sealed record CardSetDefinitionFile
 {
-	public int FormatVersion { get; init; }
-	public int SetCount { get; init; }
-	public List<CardSetDefinition> Sets { get; init; } = [];
+	public int                     FormatVersion { get; init; }
+	public int                     SetCount      { get; init; }
+	public List<CardSetDefinition> Sets          { get; init; } = [ ];
 }
 
 public sealed record CardRulingFile
 {
-	public int FormatVersion { get; init; }
-	public int RulingCount { get; init; }
-	public List<CardRuling> Rulings { get; init; } = [];
+	public int              FormatVersion { get; init; }
+	public int              RulingCount   { get; init; }
+	public List<CardRuling> Rulings       { get; init; } = [ ];
 }
