@@ -118,14 +118,10 @@ public static class DeckValidator
 			counts.TryGetValue( pair.Key, out int count );
 
 			if ( count < pair.Value.MinimumCards )
-			{
 				report.Issues.Add( new DeckValidationIssue { Code = DeckValidationIssueCode.SectionTooSmall, Section = pair.Key, Message = $"Section '{pair.Key}' contains {count} cards; " + $"{pair.Value.MinimumCards} are required." } );
-			}
 
 			if ( pair.Value.MaximumCards is int maximum && count > maximum )
-			{
 				report.Issues.Add( new DeckValidationIssue { Code = DeckValidationIssueCode.SectionTooLarge, Section = pair.Key, Message = $"Section '{pair.Key}' contains {count} cards; " + $"the maximum is {maximum}." } );
-			}
 		}
 	}
 

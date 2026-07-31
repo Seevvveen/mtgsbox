@@ -1,11 +1,13 @@
 #nullable enable
 
 using Sandbox.Classes.Database.Types;
+using Sandbox.Classes.Decals;
+using Sandbox.Classes.Zones;
 using System;
 using System.Threading.Tasks;
 using RuntimeCardDatabase = Sandbox.Classes.Database.CardDatabase;
 
-namespace Sandbox.Classes;
+namespace Sandbox.Classes.Cards;
 
 /// <summary>
 ///     Runtime representation of one physical card in the world.
@@ -91,9 +93,7 @@ public sealed class CardObject : Component
 				return RevealedPrintingId;
 
 			if ( GameObject.Network.IsOwner )
-			{
 				return _privatePrintingId != Guid.Empty? _privatePrintingId : _authoritativePrintingId;
-			}
 
 			return Guid.Empty;
 		}
@@ -144,14 +144,10 @@ public sealed class CardObject : Component
 	public void SetCard( Guid printingId )
 	{
 		if ( printingId == Guid.Empty )
-		{
 			throw new ArgumentException( "Printing ID cannot be empty.", nameof(printingId) );
-		}
 
 		if ( GameObject.Network.IsProxy )
-		{
 			throw new InvalidOperationException( "Only the card authority can assign its hidden identity." );
-		}
 
 		_authoritativePrintingId = printingId;
 		_privatePrintingId       = printingId;
@@ -170,14 +166,10 @@ public sealed class CardObject : Component
 			throw new ArgumentOutOfRangeException( nameof(faceIndex) );
 
 		if ( GameObject.Network.IsProxy )
-		{
 			throw new InvalidOperationException( "Only the card authority can reveal it." );
-		}
 
 		if ( _authoritativePrintingId == Guid.Empty )
-		{
 			throw new InvalidOperationException( "Assign a printing before revealing the card." );
-		}
 
 		if ( faceIndex == 1 )
 			RequirePrintedBack( _authoritativePrintingId );
@@ -193,14 +185,10 @@ public sealed class CardObject : Component
 	public void FlipPrintedFace()
 	{
 		if ( GameObject.Network.IsProxy )
-		{
 			throw new InvalidOperationException( "Printed faces must be changed by card authority." );
-		}
 
 		if ( RevealedPrintingId == Guid.Empty )
-		{
 			throw new InvalidOperationException( "A concealed card cannot transform publicly." );
-		}
 
 		RequirePrintedBack( RevealedPrintingId );
 
@@ -211,9 +199,7 @@ public sealed class CardObject : Component
 	public void SetTapped( bool tapped )
 	{
 		if ( GameObject.Network.IsProxy )
-		{
 			throw new InvalidOperationException( "Only card authority can change tapped state." );
-		}
 
 		Tapped = tapped;
 	}
@@ -233,9 +219,7 @@ public sealed class CardObject : Component
 		}
 
 		if ( card is null || !CardFaceRenderer.HasPrintedBack( card ) )
-		{
 			throw new InvalidOperationException( "This printing has no second printed face." );
-		}
 	}
 
 
@@ -245,9 +229,7 @@ public sealed class CardObject : Component
 	public void Conceal()
 	{
 		if ( GameObject.Network.IsProxy )
-		{
 			throw new InvalidOperationException( "Only the card authority can conceal it." );
-		}
 
 		FaceIndex          = -1;
 		RevealedPrintingId = Guid.Empty;
@@ -267,7 +249,11 @@ public sealed class CardObject : Component
 	}
 
 
-	[Rpc.Owner] private void ReceivePrivateIdentity( Guid printingId ) { _privatePrintingId = printingId; }
+	[Rpc.Owner]
+	private void ReceivePrivateIdentity( Guid printingId )
+	{
+		_privatePrintingId = printingId;
+	}
 
 
 	public bool TryGetKnownCard( out NormalizedCard? card )
@@ -312,7 +298,11 @@ public sealed class CardObject : Component
 	}
 
 
-	[Rpc.Owner] private void MoveToOwner( Transform pose ) { MoveTo( pose ); }
+	[Rpc.Owner]
+	private void MoveToOwner( Transform pose )
+	{
+		MoveTo( pose );
+	}
 
 
 	public void SnapTo( Transform pose )
@@ -332,7 +322,11 @@ public sealed class CardObject : Component
 	}
 
 
-	[Rpc.Owner] private void SnapToOwner( Transform pose ) { SnapTo( pose ); }
+	[Rpc.Owner]
+	private void SnapToOwner( Transform pose )
+	{
+		SnapTo( pose );
+	}
 
 
 	/// <summary>
@@ -343,9 +337,7 @@ public sealed class CardObject : Component
 	public void PlaceInZone( Guid zoneId, Transform freeformPose )
 	{
 		if ( GameObject.Network.IsProxy )
-		{
 			throw new InvalidOperationException( "Zone placement must be performed by card authority." );
-		}
 
 		ZoneObject? zone = ZoneObject.Find( zoneId );
 
@@ -389,7 +381,11 @@ public sealed class CardObject : Component
 	}
 
 
-	[Rpc.Owner] private void ThrowOwner( Vector3 velocity, Vector3 angularVelocity ) { Throw( velocity, angularVelocity ); }
+	[Rpc.Owner]
+	private void ThrowOwner( Vector3 velocity, Vector3 angularVelocity )
+	{
+		Throw( velocity, angularVelocity );
+	}
 
 
 	public void CancelThrow()
@@ -408,10 +404,16 @@ public sealed class CardObject : Component
 	}
 
 
-	public void Pulse() { _pulseAge = 0f; }
+	public void Pulse()
+	{
+		_pulseAge = 0f;
+	}
 
 
-	public void SetGlow( bool enabled ) { _glow = enabled; }
+	public void SetGlow( bool enabled )
+	{
+		_glow = enabled;
+	}
 
 
 	public void Highlight( Color tint, float amount )
@@ -643,7 +645,10 @@ public sealed class CardObject : Component
 	}
 
 
-	private float PulseAmount() { return _pulseAge < 0f? 0f : MathF.Sin( _pulseAge / PulseDuration * MathF.PI ); }
+	private float PulseAmount()
+	{
+		return _pulseAge < 0f? 0f : MathF.Sin( _pulseAge / PulseDuration * MathF.PI );
+	}
 
 
 	private Rotation FaceRotation()

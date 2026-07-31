@@ -31,9 +31,7 @@ public readonly record struct ColorSet
 	private ColorSet( byte mask )
 	{
 		if ( ( mask & ~ValidMask ) != 0 )
-		{
 			throw new ArgumentOutOfRangeException( nameof(mask), $"Color mask '{mask}' contains undefined bits." );
-		}
 
 		_mask = mask;
 	}
@@ -67,7 +65,10 @@ public readonly record struct ColorSet
 	}
 
 
-	public static ColorSet FromColor( MagicColor color ) { return new ColorSet( GetMask( color ) ); }
+	public static ColorSet FromColor( MagicColor color )
+	{
+		return new ColorSet( GetMask( color ) );
+	}
 
 
 	public static ColorSet FromColors( params MagicColor[] colors )
@@ -104,31 +105,58 @@ public readonly record struct ColorSet
 	}
 
 
-	public static ColorSet? FromNullableScryfall( string[]? values ) { return values is null? null : FromScryfall( values ); }
+	public static ColorSet? FromNullableScryfall( string[]? values )
+	{
+		return values is null? null : FromScryfall( values );
+	}
 
 
-	public bool Contains( MagicColor color ) { return ( _mask & GetMask( color ) ) != 0; }
+	public bool Contains( MagicColor color )
+	{
+		return ( _mask & GetMask( color ) ) != 0;
+	}
 
 
-	public bool ContainsAll( ColorSet other ) { return ( _mask & other._mask ) == other._mask; }
+	public bool ContainsAll( ColorSet other )
+	{
+		return ( _mask & other._mask ) == other._mask;
+	}
 
 
-	public bool Overlaps( ColorSet other ) { return ( _mask & other._mask ) != 0; }
+	public bool Overlaps( ColorSet other )
+	{
+		return ( _mask & other._mask ) != 0;
+	}
 
 
-	public ColorSet Add( MagicColor color ) { return new ColorSet( (byte)( _mask | GetMask( color ) ) ); }
+	public ColorSet Add( MagicColor color )
+	{
+		return new ColorSet( (byte)( _mask | GetMask( color ) ) );
+	}
 
 
-	public ColorSet Remove( MagicColor color ) { return new ColorSet( (byte)( _mask & ~GetMask( color ) ) ); }
+	public ColorSet Remove( MagicColor color )
+	{
+		return new ColorSet( (byte)( _mask & ~GetMask( color ) ) );
+	}
 
 
-	public ColorSet Union( ColorSet other ) { return new ColorSet( (byte)( _mask | other._mask ) ); }
+	public ColorSet Union( ColorSet other )
+	{
+		return new ColorSet( (byte)( _mask | other._mask ) );
+	}
 
 
-	public ColorSet Intersect( ColorSet other ) { return new ColorSet( (byte)( _mask & other._mask ) ); }
+	public ColorSet Intersect( ColorSet other )
+	{
+		return new ColorSet( (byte)( _mask & other._mask ) );
+	}
 
 
-	public ColorSet Except( ColorSet other ) { return new ColorSet( (byte)( _mask & ~other._mask ) ); }
+	public ColorSet Except( ColorSet other )
+	{
+		return new ColorSet( (byte)( _mask & ~other._mask ) );
+	}
 
 
 	public MagicColor[] ToArray()
@@ -173,7 +201,10 @@ public readonly record struct ColorSet
 	}
 
 
-	public override string ToString() { return IsColorless? "Colorless" : ToAbbreviationString(); }
+	public override string ToString()
+	{
+		return IsColorless? "Colorless" : ToAbbreviationString();
+	}
 
 
 	internal static ColorSet FromScryfallSymbol( string? value )

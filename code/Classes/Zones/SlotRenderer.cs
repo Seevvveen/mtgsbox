@@ -1,8 +1,9 @@
 #nullable enable
 
+using Sandbox.Classes.Cards;
 using Sandbox.UI;
 using System;
-namespace Sandbox.Classes;
+namespace Sandbox.Classes.Zones;
 
 /// <summary>
 ///     Cached render resources for one MTG zone marker.
@@ -110,8 +111,14 @@ public static class SlotRenderer
 	}
 
 
-	private static Rect Inset( Rect rect, float amount ) { return new Rect( rect.Left + amount, rect.Top + amount, rect.Width - amount * 2f, rect.Height - amount * 2f ); }
+	private static Rect Inset( Rect rect, float amount )
+	{
+		return new Rect( rect.Left + amount, rect.Top + amount, rect.Width - amount * 2f, rect.Height - amount * 2f );
+	}
 
 
-	public static void ClearCache() { Cache.Clear(); }
+	public static void ClearCache()
+	{
+		Cache.Clear();
+	}
 }

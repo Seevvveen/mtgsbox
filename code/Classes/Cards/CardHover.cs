@@ -1,7 +1,10 @@
 #nullable enable
 
+using Sandbox.Classes.Decals;
+using Sandbox.Classes.Zones;
+using Sandbox.Framework;
 using System;
-namespace Sandbox.Classes;
+namespace Sandbox.Classes.Cards;
 
 /// <summary>
 ///     Local mouse interaction for the in-world MTG cards. Attach this component
@@ -196,9 +199,7 @@ public sealed class CardHover : Component
 			GameDirector? director = Scene.Get<GameDirector>();
 
 			if ( director is not null )
-			{
 				director.RequestMoveCard( card, zone.ZoneId, dropPose );
-			}
 			else
 				card.PlaceInZone( zone.ZoneId, dropPose );
 		}
@@ -209,9 +210,7 @@ public sealed class CardHover : Component
 			GameDirector? director       = Scene.Get<GameDirector>();
 
 			if ( director is not null )
-			{
 				director.RequestThrowCard( card, planarVelocity, spin );
-			}
 			else
 				card.Throw( planarVelocity, spin );
 		}

@@ -1,11 +1,10 @@
 #nullable enable
 
-using Sandbox.Classes.Cards;
 using Sandbox.Classes.Database.Types;
 using Sandbox.UI;
 using System;
 using System.Threading.Tasks;
-namespace Sandbox.Classes;
+namespace Sandbox.Classes.Cards;
 
 /// <summary>
 ///     Client-side resources for one physical card printing. Atlas contains the
@@ -56,9 +55,7 @@ public static class CardFaceRenderer
 	public static Task<CardTextures> BuildConcealedAsync()
 	{
 		if ( Application.IsHeadless )
-		{
 			throw new InvalidOperationException( "Card textures cannot be created on a headless host." );
-		}
 
 		string key = $"concealed|{StandardBackImageUrl}";
 
@@ -84,9 +81,7 @@ public static class CardFaceRenderer
 		ArgumentNullException.ThrowIfNull( card );
 
 		if ( Application.IsHeadless )
-		{
 			throw new InvalidOperationException( "Card textures cannot be created on a headless host." );
-		}
 
 		string? frontUrl       = GetImageUrl( card.Gameplay.Faces[0].Images ) ?? GetImageUrl( card.Presentation.Images );
 		string? printedBackUrl = GetPrintedBackUrl( card );
@@ -177,9 +172,7 @@ public static class CardFaceRenderer
 			}
 		}
 		else
-		{
 			Log.Warning( $"Card printing '{cardName}' has no front image URL." );
-		}
 
 		return RenderMissingFront();
 	}
@@ -217,9 +210,7 @@ public static class CardFaceRenderer
 		Texture texture = await Texture.LoadAsync( url, false );
 
 		if ( !texture.IsLoaded || texture.IsError )
-		{
 			throw new InvalidOperationException( "The downloaded texture was invalid." );
-		}
 
 		return texture;
 	}

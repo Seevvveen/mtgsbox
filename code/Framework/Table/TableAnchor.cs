@@ -1,7 +1,8 @@
 #nullable enable
 
+using Sandbox.Classes.Cards;
 using System;
-namespace Sandbox.Classes;
+namespace Sandbox.Framework.Table;
 
 /// <summary>
 ///     Shared table coordinate system used by game rules, player zones, and the

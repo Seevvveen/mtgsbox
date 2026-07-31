@@ -1,5 +1,5 @@
 ﻿using System;
-namespace Sandbox.Classes;
+namespace Sandbox.Classes.Cards;
 
 /// <summary>
 ///     Builds the two-sided card model in code (no .vmdl asset needed). Each face is a rounded
@@ -60,7 +60,10 @@ public static class CardMesh
 	/// <summary>
 	///     Drop the cached model so it rebuilds (e.g. after changing the size while iterating).
 	/// </summary>
-	public static void Invalidate() { _shared = null; }
+	public static void Invalidate()
+	{
+		_shared = null;
+	}
 
 
 	/// <summary>
@@ -186,6 +189,7 @@ public static class CardMesh
 		int first = verts.Count;
 
 		foreach ( Vector2 p in outline )
+		{
 			verts.Add(
 					  MakeVertex(
 								 p,
@@ -197,6 +201,7 @@ public static class CardMesh
 								 hh
 								)
 					 );
+		}
 
 		int n = outline.Count;
 

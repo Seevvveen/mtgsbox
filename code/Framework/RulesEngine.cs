@@ -1,8 +1,12 @@
 #nullable enable
 
+using Sandbox.Classes;
+using Sandbox.Classes.Cards;
 using Sandbox.Classes.DeckValidation;
+using Sandbox.Classes.Zones;
+using Sandbox.Framework.GameInfo;
 using System;
-namespace Sandbox.Classes;
+namespace Sandbox.Framework;
 
 /// <summary>
 ///     Provides default interaction methods. This is contains standard behavior interactions.
@@ -17,7 +21,10 @@ public class RulesEngine : Component
 
 
 	//Returns Deck Building Rules
-	public virtual DeckFormatDefinition CreateFormat( string formatCode ) { return DeckFormatDefinition.Constructed( formatCode, formatCode ); }
+	public virtual DeckFormatDefinition CreateFormat( string formatCode )
+	{
+		return DeckFormatDefinition.Constructed( formatCode, formatCode );
+	}
 
 
 	//
@@ -37,22 +44,37 @@ public class RulesEngine : Component
 	}
 
 
-	public virtual bool CanFlipCard( PlayerSeat player, CardObject card ) { return !player.IsEliminated && ( card.ControllerPlayerId == player.PlayerId || card.OwnerPlayerId == player.PlayerId ); }
+	public virtual bool CanFlipCard( PlayerSeat player, CardObject card )
+	{
+		return !player.IsEliminated && ( card.ControllerPlayerId == player.PlayerId || card.OwnerPlayerId == player.PlayerId );
+	}
 
 
-	public virtual bool CanTapCard( PlayerSeat player, CardObject card ) { return CanFlipCard( player, card ) && ZoneObject.Find( card.ZoneId )?.ZoneType == ZoneType.Battlefield; }
+	public virtual bool CanTapCard( PlayerSeat player, CardObject card )
+	{
+		return CanFlipCard( player, card ) && ZoneObject.Find( card.ZoneId )?.ZoneType == ZoneType.Battlefield;
+	}
 
 
-	public virtual bool CanEndTurn( PlayerSeat player ) { return Director.ActivePlayerId == player.PlayerId; }
+	public virtual bool CanEndTurn( PlayerSeat player )
+	{
+		return Director.ActivePlayerId == player.PlayerId;
+	}
 
 
 	//
 	// Custom Actions
 	//
-	public virtual IReadOnlyList<GameAction> ActionsFor( PlayerSeat player ) { return Array.Empty<GameAction>(); }
+	public virtual IReadOnlyList<GameAction> ActionsFor( PlayerSeat player )
+	{
+		return Array.Empty<GameAction>();
+	}
 
 
-	public virtual bool TryPerformAction( PlayerSeat player, string actionId, long amount ) { return false; }
+	public virtual bool TryPerformAction( PlayerSeat player, string actionId, long amount )
+	{
+		return false;
+	}
 
 
 
@@ -65,7 +87,10 @@ public class RulesEngine : Component
 	public virtual void OnTurnStarted( PlayerSeat player ) { }
 
 
-	public virtual bool TryMulligan( PlayerSeat player ) { return false; }
+	public virtual bool TryMulligan( PlayerSeat player )
+	{
+		return false;
+	}
 
 
 	public virtual void OnOpeningHandKept( PlayerSeat player ) { }
@@ -86,9 +111,7 @@ public class RulesEngine : Component
 	protected ZoneObject CreatePlayerZone( PlayerSeat player, ZoneType type, Transform pose, ZoneLayout? layout = null, int capacity = 0 )
 	{
 		if ( !Networking.IsHost )
-		{
 			throw new InvalidOperationException( "Only the host can create match zones." );
-		}
 
 		GameObject  zoneObject = new GameObject( Director.GameObject, true, $"{player.DisplayName} {type}" ) { WorldPosition = pose.Position, WorldRotation = pose.Rotation };
 		ZoneObject? zone       = zoneObject.Components.Create<ZoneObject>();
@@ -135,9 +158,7 @@ public class RulesEngine : Component
 	protected CardObject CreateCard( PlayerSeat owner, Guid printingId )
 	{
 		if ( !Networking.IsHost )
-		{
 			throw new InvalidOperationException( "Only the host can create match cards." );
-		}
 
 		GameObject  cardObject = new GameObject( Director.GameObject, true, "MTG Card" );
 		CardObject? card       = cardObject.Components.Create<CardObject>();

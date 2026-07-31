@@ -1,6 +1,5 @@
 #nullable enable
 
-using Sandbox.Classes.CardDatabase;
 using Sandbox.Classes.Cards.Colors;
 using Sandbox.Classes.Cards.ManaSymbols;
 using Sandbox.Classes.Database.Types;
@@ -16,9 +15,7 @@ public static class ScryfallSymbolNormalizer
 		ArgumentNullException.ThrowIfNull( dto );
 
 		if ( !string.Equals( dto.Object, "card_symbol", StringComparison.Ordinal ) )
-		{
 			throw new InvalidDataException( $"Expected a Scryfall card_symbol object, but received " + $"'{dto.Object}'." );
-		}
 
 		return new CardSymbolDefinition
 			   {
@@ -68,7 +65,10 @@ public static class ScryfallSymbolNormalizer
 	}
 
 
-	private static InvalidDataException MissingField( string field ) { return new InvalidDataException( $"Required Scryfall symbol field '{field}' is missing." ); }
+	private static InvalidDataException MissingField( string field )
+	{
+		return new InvalidDataException( $"Required Scryfall symbol field '{field}' is missing." );
+	}
 
 
 	private static Dictionary<string, JsonElement> CopyExtensions( Dictionary<string, JsonElement>? source )

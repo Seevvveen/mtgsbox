@@ -1,6 +1,7 @@
 #nullable enable
 
-namespace Sandbox.Classes;
+using Sandbox.Classes.Cards;
+namespace Sandbox.Framework.GameInfo;
 
 public enum GameState
 {

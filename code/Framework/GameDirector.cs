@@ -1,8 +1,12 @@
 #nullable enable
 
+using Sandbox.Classes;
+using Sandbox.Classes.Cards;
 using Sandbox.Classes.DeckValidation;
+using Sandbox.Classes.Zones;
+using Sandbox.Framework.GameInfo;
 using System;
-namespace Sandbox.Classes;
+namespace Sandbox.Framework;
 
 /// <summary>
 ///     Host Authority Coordinator
@@ -54,10 +58,16 @@ public sealed class GameDirector : Component, Component.INetworkListener
 	}
 
 
-	void INetworkListener.OnActive( Connection channel ) { SeatPlayer( channel ); }
+	void INetworkListener.OnActive( Connection channel )
+	{
+		SeatPlayer( channel );
+	}
 
 
-	void INetworkListener.OnDisconnected( Connection channel ) { RemovePlayer( channel ); }
+	void INetworkListener.OnDisconnected( Connection channel )
+	{
+		RemovePlayer( channel );
+	}
 
 
 
@@ -95,10 +105,16 @@ public sealed class GameDirector : Component, Component.INetworkListener
 	}
 
 
-	public Deck? GetSubmittedDeck( Guid playerId ) { return _submittedDecks.TryGetValue( playerId, out Deck? deck )? deck : null; }
+	public Deck? GetSubmittedDeck( Guid playerId )
+	{
+		return _submittedDecks.TryGetValue( playerId, out Deck? deck )? deck : null;
+	}
 
 
-	public PlayerSeat? SeatOf( Guid playerId ) { return Seats.FirstOrDefault( seat => seat.PlayerId == playerId ); }
+	public PlayerSeat? SeatOf( Guid playerId )
+	{
+		return Seats.FirstOrDefault( seat => seat.PlayerId == playerId );
+	}
 
 
 	[Rpc.Host]
@@ -556,7 +572,10 @@ public sealed class GameDirector : Component, Component.INetworkListener
 	}
 
 
-	private PlayerSeat[] ActiveSeats() { return Seats.Where( seat => seat.Occupied && !seat.IsEliminated ).ToArray(); }
+	private PlayerSeat[] ActiveSeats()
+	{
+		return Seats.Where( seat => seat.Occupied && !seat.IsEliminated ).ToArray();
+	}
 
 
 	private static PlayerSeat? NextSeat( Guid current, IReadOnlyList<PlayerSeat> players )

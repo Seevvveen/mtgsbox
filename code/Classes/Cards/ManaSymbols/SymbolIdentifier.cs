@@ -17,7 +17,10 @@ public readonly record struct SymbolIdentifier
 	private readonly string? _value;
 
 
-	private SymbolIdentifier( string value ) { _value = value; }
+	private SymbolIdentifier( string value )
+	{
+		_value = value;
+	}
 
 
 	/// <summary>
@@ -114,8 +117,14 @@ public readonly record struct SymbolIdentifier
 	}
 
 
-	public override string ToString() { return _value ?? ""; }
+	public override string ToString()
+	{
+		return _value ?? "";
+	}
 
 
-	private static FormatException InvalidFormat( string value ) { return new FormatException( $"'{value}' is not exactly one valid symbol identifier." ); }
+	private static FormatException InvalidFormat( string value )
+	{
+		return new FormatException( $"'{value}' is not exactly one valid symbol identifier." );
+	}
 }

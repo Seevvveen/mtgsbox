@@ -39,9 +39,7 @@ public sealed class ManaCost : IEquatable<ManaCost>
 		foreach ( SymbolIdentifier symbol in _symbols )
 		{
 			if ( !symbol.IsValid )
-			{
 				throw new ArgumentException( "A mana cost cannot contain an uninitialized symbol.", nameof(symbols) );
-			}
 
 			text.Append( symbol );
 		}
@@ -83,7 +81,10 @@ public sealed class ManaCost : IEquatable<ManaCost>
 	}
 
 
-	public bool Equals( ManaCost? other ) { return other is not null && string.Equals( _canonicalText, other._canonicalText, StringComparison.Ordinal ); }
+	public bool Equals( ManaCost? other )
+	{
+		return other is not null && string.Equals( _canonicalText, other._canonicalText, StringComparison.Ordinal );
+	}
 
 
 	/// <summary>
@@ -97,9 +98,7 @@ public sealed class ManaCost : IEquatable<ManaCost>
 			return None;
 
 		if ( value.Contains( "//", StringComparison.Ordinal ) )
-		{
 			throw new FormatException( "The value contains multiple face costs. " + "Parse each card face's mana_cost separately." );
-		}
 
 		List<SymbolIdentifier> symbols = new List<SymbolIdentifier>();
 		int                    index   = 0;
@@ -114,16 +113,12 @@ public sealed class ManaCost : IEquatable<ManaCost>
 			}
 
 			if ( value[index] != '{' )
-			{
 				throw new FormatException( $"Expected '{{' at character index {index}." );
-			}
 
 			int closingBrace = value.IndexOf( '}', index + 1 );
 
 			if ( closingBrace < 0 )
-			{
 				throw new FormatException( $"Mana symbol beginning at index {index} is not closed." );
-			}
 
 			int    tokenLength = closingBrace - index + 1;
 			string token       = value.Substring( index, tokenLength );
@@ -140,7 +135,10 @@ public sealed class ManaCost : IEquatable<ManaCost>
 	}
 
 
-	public static ManaCost? ParseNullable( string? value ) { return value is null? null : Parse( value ); }
+	public static ManaCost? ParseNullable( string? value )
+	{
+		return value is null? null : Parse( value );
+	}
 
 
 	public static bool TryParse( string? value, out ManaCost? manaCost )
@@ -173,17 +171,32 @@ public sealed class ManaCost : IEquatable<ManaCost>
 	}
 
 
-	public override string ToString() { return _canonicalText; }
+	public override string ToString()
+	{
+		return _canonicalText;
+	}
 
 
-	public override bool Equals( object? obj ) { return obj is ManaCost other && Equals( other ); }
+	public override bool Equals( object? obj )
+	{
+		return obj is ManaCost other && Equals( other );
+	}
 
 
-	public override int GetHashCode() { return StringComparer.Ordinal.GetHashCode( _canonicalText ); }
+	public override int GetHashCode()
+	{
+		return StringComparer.Ordinal.GetHashCode( _canonicalText );
+	}
 
 
-	public static bool operator ==( ManaCost? left, ManaCost? right ) { return Equals( left, right ); }
+	public static bool operator ==( ManaCost? left, ManaCost? right )
+	{
+		return Equals( left, right );
+	}
 
 
-	public static bool operator !=( ManaCost? left, ManaCost? right ) { return !Equals( left, right ); }
+	public static bool operator !=( ManaCost? left, ManaCost? right )
+	{
+		return !Equals( left, right );
+	}
 }

@@ -1,4 +1,5 @@
-﻿using Sandbox.Classes.CardDatabase;
+﻿using Sandbox.Classes.Cards.ManaSymbols;
+using Sandbox.Classes.Database.Types;
 using System;
 namespace Sandbox.Classes.Cards.Colors.Util;
 
@@ -19,8 +20,14 @@ public static class ScryfallColorManaNormalizer
 	}
 
 
-	public static ProducedManaSet? NormalizeProducedMana( string[]? producedMana ) { return ProducedManaSet.FromNullableScryfall( producedMana ); }
+	public static ProducedManaSet? NormalizeProducedMana( string[]? producedMana )
+	{
+		return ProducedManaSet.FromNullableScryfall( producedMana );
+	}
 
 
-	public static ColorSet? NormalizeFaceColors( string[]? faceColors ) { return ColorSet.FromNullableScryfall( faceColors ); }
+	public static ColorSet? NormalizeFaceColors( string[]? faceColors )
+	{
+		return ColorSet.FromNullableScryfall( faceColors );
+	}
 }

@@ -89,9 +89,7 @@ public static class DeckJson
 		Deck deck = JsonSerializer.Deserialize<Deck>( json, Options ) ?? throw new JsonException( "Deck JSON deserialized to null." );
 
 		if ( deck.SchemaVersion != Deck.CurrentSchemaVersion )
-		{
 			throw new NotSupportedException( $"Deck schema version {deck.SchemaVersion} is not supported." );
-		}
 
 		return deck;
 	}

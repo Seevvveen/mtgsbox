@@ -1,6 +1,5 @@
 #nullable enable
 
-using Sandbox.Classes.Database;
 using System;
 using System.IO;
 using System.Text.Json;
@@ -8,7 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using RuntimeCardDatabase = Sandbox.Classes.Database.CardDatabase;
 
-namespace Sandbox.Classes.CardDatabase;
+namespace Sandbox.Classes.Database;
 
 public enum DatabaseStartupState
 {
@@ -59,7 +58,10 @@ public sealed class DatabaseManager : GameObjectSystem<DatabaseManager>, ISceneS
 	}
 
 
-	void ISceneStartup.OnHostInitialize() { StartDatabase( allowProvisioning: true ); }
+	void ISceneStartup.OnHostInitialize()
+	{
+		StartDatabase( allowProvisioning: true );
+	}
 
 
 	void ISceneStartup.OnClientInitialize()
@@ -109,9 +111,7 @@ public sealed class DatabaseManager : GameObjectSystem<DatabaseManager>, ISceneS
 			catch ( Exception openFailure ) when ( IsProvisionableDatabaseFailure( openFailure ) )
 			{
 				if ( !allowProvisioning )
-				{
 					throw new InvalidOperationException( "This client has no usable card-definition " + "database. Ship the same validated database " + "generation with the game before joining a match.", openFailure );
-				}
 
 				if ( !TrySetState( runId, DatabaseStartupState.Provisioning, "Preparing card definitions for the first run." ) )
 					return;
@@ -226,7 +226,10 @@ public sealed class DatabaseManager : GameObjectSystem<DatabaseManager>, ISceneS
 	}
 
 
-	private static Task<IDisposable> AcquireDatabaseAsync() { return GameTask.RunInThreadAsync( () => RuntimeCardDatabase.Acquire() ); }
+	private static Task<IDisposable> AcquireDatabaseAsync()
+	{
+		return GameTask.RunInThreadAsync( () => RuntimeCardDatabase.Acquire() );
+	}
 
 
 	private bool TryPublishLease( int runId, IDisposable lease, CancellationToken cancellationToken )
@@ -289,9 +292,7 @@ public sealed class DatabaseManager : GameObjectSystem<DatabaseManager>, ISceneS
 		if ( initializationTask is null || initializationTask.IsCompleted )
 			_lifetimeCancellation.Dispose();
 		else
-		{
 			_ = DisposeCancellationAfterAsync( initializationTask, _lifetimeCancellation );
-		}
 	}
 
 
@@ -312,11 +313,20 @@ public sealed class DatabaseManager : GameObjectSystem<DatabaseManager>, ISceneS
 	}
 
 
-	private static bool HaveAllSourceFiles() { return FileSystem.Data.FileExists( DatabaseFileInfo.SourceFile ) && FileSystem.Data.FileExists( DatabaseFileInfo.RulingsSourceFile ) && FileSystem.Data.FileExists( DatabaseFileInfo.SetSourceFile ) && FileSystem.Data.FileExists( DatabaseFileInfo.SymbolSourceFile ); }
+	private static bool HaveAllSourceFiles()
+	{
+		return FileSystem.Data.FileExists( DatabaseFileInfo.SourceFile ) && FileSystem.Data.FileExists( DatabaseFileInfo.RulingsSourceFile ) && FileSystem.Data.FileExists( DatabaseFileInfo.SetSourceFile ) && FileSystem.Data.FileExists( DatabaseFileInfo.SymbolSourceFile );
+	}
 
 
-	private static bool IsProvisionableDatabaseFailure( Exception exception ) { return exception is FileNotFoundException or DirectoryNotFoundException or InvalidDataException or EndOfStreamException or JsonException || exception.InnerException is not null && IsProvisionableDatabaseFailure( exception.InnerException ); }
+	private static bool IsProvisionableDatabaseFailure( Exception exception )
+	{
+		return exception is FileNotFoundException or DirectoryNotFoundException or InvalidDataException or EndOfStreamException or JsonException || exception.InnerException is not null && IsProvisionableDatabaseFailure( exception.InnerException );
+	}
 
 
-	private static bool IsSourceDataFailure( Exception exception ) { return exception is InvalidDataException or EndOfStreamException or JsonException || exception.InnerException is not null && IsSourceDataFailure( exception.InnerException ); }
+	private static bool IsSourceDataFailure( Exception exception )
+	{
+		return exception is InvalidDataException or EndOfStreamException or JsonException || exception.InnerException is not null && IsSourceDataFailure( exception.InnerException );
+	}
 }

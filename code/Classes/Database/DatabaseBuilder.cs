@@ -1,5 +1,4 @@
 ﻿#nullable enable
-using Sandbox.Classes.CardDatabase;
 using Sandbox.Classes.Cards.ManaSymbols;
 using Sandbox.Classes.Database.Types;
 using System;
@@ -44,19 +43,13 @@ public static class DatabaseBuilder
 										   NormalizedCard card = ScryfallCardNormalizer.Normalize( dto );
 
 										   if ( !cardIds.Add( card.Gameplay.ScryfallId ) )
-										   {
 											   throw new InvalidDataException( $"Duplicate Scryfall card ID " + $"'{card.Gameplay.ScryfallId}'." );
-										   }
 
 										   if ( !setDefinitionsById.TryGetValue( card.Set.Id, out CardSetDefinition? setDefinition ) )
-										   {
 											   throw new InvalidDataException( $"Card '{card.Gameplay.ScryfallId}' references " + $"unknown set '{card.Set.Id}'." );
-										   }
 
 										   if ( !string.Equals( card.Set.Code, setDefinition.Code, StringComparison.OrdinalIgnoreCase ) )
-										   {
 											   throw new InvalidDataException( $"Card '{card.Gameplay.ScryfallId}' uses set code " + $"'{card.Set.Code}', but set '{card.Set.Id}' is " + $"registered as '{setDefinition.Code}'." );
-										   }
 
 										   int recordId = indexEntries.Count;
 
@@ -71,9 +64,7 @@ public static class DatabaseBuilder
 										   nameMappings.Add( new CardNameMapping { Name = card.Gameplay.Name, RecordId = recordId } );
 
 										   if ( card.Gameplay.OracleId is Guid oracleId )
-										   {
 											   oracleMappings.Add( new CardOracleMapping { OracleId = oracleId, RecordId = recordId } );
-										   }
 									   },
 									   DatabaseFileInfo.ImportJsonOptions,
 									   cancellationToken
@@ -113,24 +104,16 @@ public static class DatabaseBuilder
 		ScryfallListDto<ScryfallSetDto>? response = JsonSerializer.Deserialize<ScryfallListDto<ScryfallSetDto>>( input, DatabaseFileInfo.ImportJsonOptions );
 
 		if ( response is null )
-		{
 			throw new InvalidDataException( "Could not deserialize the Scryfall sets response." );
-		}
 
 		if ( !string.Equals( response.Object, "list", StringComparison.Ordinal ) )
-		{
 			throw new InvalidDataException( $"Expected a Scryfall list response for sets, but " + $"received '{response.Object}'." );
-		}
 
 		if ( response.HasMore )
-		{
 			throw new InvalidDataException( "The Scryfall sets response unexpectedly has another " + "page." );
-		}
 
 		if ( response.Data is not { Length: > 0 } sourceSets )
-		{
 			throw new InvalidDataException( "The Scryfall sets response contains no definitions." );
-		}
 
 		List<CardSetDefinition> definitions = new List<CardSetDefinition>( sourceSets.Length );
 		HashSet<Guid>           ids         = new HashSet<Guid>();
@@ -143,19 +126,13 @@ public static class DatabaseBuilder
 			CardSetDefinition definition = ScryfallSupplementalNormalizer.NormalizeSet( sourceSets[index] );
 
 			if ( !string.Equals( definition.Object, "set", StringComparison.Ordinal ) )
-			{
 				throw new InvalidDataException( $"Set at data index {index} has object type " + $"'{definition.Object}'." );
-			}
 
 			if ( !ids.Add( definition.Id ) )
-			{
 				throw new InvalidDataException( $"Duplicate Scryfall set ID '{definition.Id}'." );
-			}
 
 			if ( !codes.Add( definition.Code ) )
-			{
 				throw new InvalidDataException( $"Duplicate Scryfall set code '{definition.Code}'." );
-			}
 
 			definitions.Add( definition );
 		}
@@ -177,9 +154,7 @@ public static class DatabaseBuilder
 											 CardRuling ruling = ScryfallSupplementalNormalizer.NormalizeRuling( dto );
 
 											 if ( !string.Equals( ruling.Object, "ruling", StringComparison.Ordinal ) )
-											 {
 												 throw new InvalidDataException( $"Ruling at object index {index} has object " + $"type '{ruling.Object}'." );
-											 }
 
 											 rulings.Add( ruling );
 										 },
@@ -188,9 +163,7 @@ public static class DatabaseBuilder
 										);
 
 		if ( rulings.Count == 0 )
-		{
 			throw new InvalidDataException( "The Scryfall rulings bulk file contains no rulings." );
-		}
 
 		return rulings;
 	}
@@ -203,24 +176,16 @@ public static class DatabaseBuilder
 		ScryfallSymbologyDto? response = JsonSerializer.Deserialize<ScryfallSymbologyDto>( input, DatabaseFileInfo.ImportJsonOptions );
 
 		if ( response is null )
-		{
 			throw new InvalidDataException( "Could not deserialize the Scryfall symbology response." );
-		}
 
 		if ( !string.Equals( response.Object, "list", StringComparison.Ordinal ) )
-		{
 			throw new InvalidDataException( $"Expected a Scryfall list response, but received " + $"'{response.Object}'." );
-		}
 
 		if ( response.HasMore )
-		{
 			throw new InvalidDataException( "The Scryfall symbology response unexpectedly has " + "another page." );
-		}
 
 		if ( response.Data is not { Length: > 0 } sourceDefinitions )
-		{
 			throw new InvalidDataException( "The Scryfall symbology response contains no definitions." );
-		}
 
 		List<CardSymbolDefinition> definitions = new List<CardSymbolDefinition>( sourceDefinitions.Length );
 		HashSet<SymbolIdentifier>  identifiers = new HashSet<SymbolIdentifier>();
@@ -232,9 +197,7 @@ public static class DatabaseBuilder
 			CardSymbolDefinition definition = ScryfallSymbolNormalizer.Normalize( sourceDefinitions[index] );
 
 			if ( !identifiers.Add( definition.Id ) )
-			{
 				throw new InvalidDataException( $"Duplicate Scryfall symbol identifier " + $"'{definition.Id}' at data index {index}." );
-			}
 
 			definitions.Add( definition );
 		}
@@ -271,9 +234,7 @@ public static class DatabaseBuilder
 			}
 
 			if ( value is null )
-			{
 				throw new JsonException( $"Expected a JSON object at JSONL line {lineNumber}." );
-			}
 
 			onObject( value, objectIndex );
 			objectIndex++;
@@ -302,9 +263,7 @@ public static class DatabaseBuilder
 		byte[] bytes = JsonSerializer.SerializeToUtf8Bytes( value, DatabaseFileInfo.DatabaseJsonOptions );
 
 		if ( bytes.Length > DatabaseFileInfo.MaxCardRecordBytes )
-		{
 			throw new InvalidDataException( $"Serialized card record is {bytes.Length} bytes; the " + $"maximum is {DatabaseFileInfo.MaxCardRecordBytes} bytes." );
-		}
 
 		long offset = output.Position;
 
@@ -339,10 +298,16 @@ public static class DatabaseBuilder
 	}
 
 
-	private static void WriteSetDefinitionsFile( List<CardSetDefinition> definitions ) { WriteJsonFile( DatabaseFileInfo.SetDefinitionsFile, new CardSetDefinitionFile { FormatVersion = DatabaseFileInfo.CurrentFormatVersion, SetCount = definitions.Count, Sets = definitions } ); }
+	private static void WriteSetDefinitionsFile( List<CardSetDefinition> definitions )
+	{
+		WriteJsonFile( DatabaseFileInfo.SetDefinitionsFile, new CardSetDefinitionFile { FormatVersion = DatabaseFileInfo.CurrentFormatVersion, SetCount = definitions.Count, Sets = definitions } );
+	}
 
 
-	private static void WriteRulingsFile( List<CardRuling> rulings ) { WriteJsonFile( DatabaseFileInfo.RulingsFile, new CardRulingFile { FormatVersion = DatabaseFileInfo.CurrentFormatVersion, RulingCount = rulings.Count, Rulings = rulings } ); }
+	private static void WriteRulingsFile( List<CardRuling> rulings )
+	{
+		WriteJsonFile( DatabaseFileInfo.RulingsFile, new CardRulingFile { FormatVersion = DatabaseFileInfo.CurrentFormatVersion, RulingCount = rulings.Count, Rulings = rulings } );
+	}
 
 
 	private static void WriteJsonFile<T>( string fileName, T value )

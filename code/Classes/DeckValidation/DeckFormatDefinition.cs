@@ -24,7 +24,10 @@ public sealed record DeckFormatDefinition
 	public Dictionary<Guid, int>               CardCopyLimits      { get; init; } = [ ];
 
 
-	public static DeckFormatDefinition Constructed( string code, string displayName, int minimumMainDeckSize = 60, int maximumSideboardSize = 15 ) { return new DeckFormatDefinition { Code = code, DisplayName = displayName, Sections = new Dictionary<string, DeckSectionRule>( StringComparer.OrdinalIgnoreCase ) { [DeckSections.Main] = new DeckSectionRule { MinimumCards = minimumMainDeckSize, CountsTowardCopyLimit = true }, [DeckSections.Sideboard] = new DeckSectionRule { MaximumCards = maximumSideboardSize, CountsTowardCopyLimit = true } } }; }
+	public static DeckFormatDefinition Constructed( string code, string displayName, int minimumMainDeckSize = 60, int maximumSideboardSize = 15 )
+	{
+		return new DeckFormatDefinition { Code = code, DisplayName = displayName, Sections = new Dictionary<string, DeckSectionRule>( StringComparer.OrdinalIgnoreCase ) { [DeckSections.Main] = new DeckSectionRule { MinimumCards = minimumMainDeckSize, CountsTowardCopyLimit = true }, [DeckSections.Sideboard] = new DeckSectionRule { MaximumCards = maximumSideboardSize, CountsTowardCopyLimit = true } } };
+	}
 }
 
 public sealed record DeckSectionRule

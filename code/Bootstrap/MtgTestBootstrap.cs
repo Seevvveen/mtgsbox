@@ -1,12 +1,16 @@
 #nullable enable
 
-using Sandbox.Classes.CardDatabase;
+using Sandbox.Classes;
+using Sandbox.Classes.Cards;
+using Sandbox.Classes.Database;
 using Sandbox.Classes.Database.Types;
+using Sandbox.Framework;
+using Sandbox.Framework.GameInfo;
 using System;
 using System.Threading.Tasks;
 using RuntimeCardDatabase = Sandbox.Classes.Database.CardDatabase;
 
-namespace Sandbox.Classes;
+namespace Sandbox.Bootstrap;
 
 /// <summary>
 ///     Starts a complete two-player test match using the real MTG director. The
@@ -112,9 +116,7 @@ public sealed class MtgTestBootstrap : Component
 		Director.KeepOpeningHandAuthority( botSeat );
 
 		if ( Scene.Camera is CameraComponent camera )
-		{
 			camera.GameObject.Components.GetOrCreate<CardHover>();
-		}
 
 		HasBootstrapped = true;
 		Log.Info( $"MTG bootstrap started turn {Director.TurnNumber}: " + $"{localSeat.DisplayName} versus " + $"{botSeat.DisplayName}. Both players have shuffled " + "60-card decks and seven-card opening hands." );
@@ -157,7 +159,10 @@ public sealed class MtgTestBootstrap : Component
 	}
 
 
-	private static Deck BuildDeck( string name, NormalizedCard first, NormalizedCard second ) { return new Deck { Name = name, FormatCode = "bootstrap", Entries = [ new DeckEntry { Section = DeckSections.Main, Quantity = 30, Card = Reference( first ) }, new DeckEntry { Section = DeckSections.Main, Quantity = 30, Card = Reference( second ) } ] }; }
+	private static Deck BuildDeck( string name, NormalizedCard first, NormalizedCard second )
+	{
+		return new Deck { Name = name, FormatCode = "bootstrap", Entries = [ new DeckEntry { Section = DeckSections.Main, Quantity = 30, Card = Reference( first ) }, new DeckEntry { Section = DeckSections.Main, Quantity = 30, Card = Reference( second ) } ] };
+	}
 
 
 	private static DeckCardReference Reference( NormalizedCard card )

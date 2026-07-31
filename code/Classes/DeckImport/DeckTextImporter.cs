@@ -26,7 +26,10 @@ public sealed class DeckTextImporter
 	private readonly IDeckCardResolver _resolver;
 
 
-	public DeckTextImporter( IDeckCardResolver resolver ) { _resolver = resolver ?? throw new ArgumentNullException( nameof(resolver) ); }
+	public DeckTextImporter( IDeckCardResolver resolver )
+	{
+		_resolver = resolver ?? throw new ArgumentNullException( nameof(resolver) );
+	}
 
 
 	public DeckImportResult Import( string text, DeckImportOptions? options = null )
@@ -157,10 +160,16 @@ public sealed class DeckTextImporter
 	}
 
 
-	private static DeckCardQuery FromMatch( Match match, bool includeCollector ) { return new DeckCardQuery { Name = match.Groups["name"].Value.Trim(), SetCode = match.Groups["set"].Value, CollectorNumber = includeCollector? match.Groups["collector"].Value : null }; }
+	private static DeckCardQuery FromMatch( Match match, bool includeCollector )
+	{
+		return new DeckCardQuery { Name = match.Groups["name"].Value.Trim(), SetCode = match.Groups["set"].Value, CollectorNumber = includeCollector? match.Groups["collector"].Value : null };
+	}
 
 
-	private static string RemoveFinishMarker( string text ) { return Regex.Replace( text, @"\s+\*(?:F|E)\*\s*$", "" ); }
+	private static string RemoveFinishMarker( string text )
+	{
+		return Regex.Replace( text, @"\s+\*(?:F|E)\*\s*$", "" );
+	}
 
 
 	private static bool TryReadSection( string line, out string section )

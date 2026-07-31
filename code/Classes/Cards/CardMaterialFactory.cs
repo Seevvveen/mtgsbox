@@ -1,7 +1,7 @@
 #nullable enable
 
 using System;
-namespace Sandbox.Classes;
+namespace Sandbox.Classes.Cards;
 
 /// <summary>
 ///     Creates the simple, non-metallic complex materials used by cards and zone

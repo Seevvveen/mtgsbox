@@ -30,5 +30,8 @@ public sealed class ManaCostJsonConverter : JsonConverter<ManaCost>
 	}
 
 
-	public override void Write( Utf8JsonWriter writer, ManaCost value, JsonSerializerOptions options ) { writer.WriteStringValue( value.ToString() ); }
+	public override void Write( Utf8JsonWriter writer, ManaCost value, JsonSerializerOptions options )
+	{
+		writer.WriteStringValue( value.ToString() );
+	}
 }

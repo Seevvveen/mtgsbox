@@ -1,8 +1,12 @@
 #nullable enable
 
+using Sandbox.Classes;
+using Sandbox.Classes.Cards;
 using Sandbox.Classes.DeckValidation;
+using Sandbox.Classes.Zones;
+using Sandbox.Framework;
 using System;
-namespace Sandbox.Classes;
+namespace Sandbox.Bootstrap;
 
 /// <summary>
 ///     Minimal two-player rules used only by <see cref = "MtgTestBootstrap"/>.
@@ -36,7 +40,10 @@ public sealed class MtgBootstrapRulesEngine : RulesEngine
 		float    rowY     = side * CardMesh.Height * 1.65f;
 		Rotation rotation = side < 0f? Director.WorldRotation : Rotation.FromYaw( 180f ) * Director.WorldRotation;
 
-		Transform At( float x, float y ) { return new Transform( Director.WorldPosition + Director.WorldRotation * new Vector3( x, y, 0f ), rotation ); }
+		Transform At( float x, float y )
+		{
+			return new Transform( Director.WorldPosition + Director.WorldRotation * new Vector3( x, y, 0f ), rotation );
+		}
 
 		ZoneObject library   = CreatePlayerZone( player, ZoneType.Library, At( -CardMesh.Width * 1.35f, rowY ) );
 		ZoneObject graveyard = CreatePlayerZone( player, ZoneType.Graveyard, At( 0f, rowY ) );

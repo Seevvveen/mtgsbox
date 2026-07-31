@@ -4,6 +4,7 @@ using Sandbox.Classes.Cards;
 using Sandbox.Classes.Cards.CardFrames;
 using Sandbox.Classes.Cards.Colors;
 using Sandbox.Classes.Cards.Legality;
+using Sandbox.Classes.Cards.ManaSymbols;
 using System;
 using System.Text.Json;
 namespace Sandbox.Classes.Database.Types;

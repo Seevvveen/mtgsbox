@@ -1,7 +1,7 @@
 #nullable enable
 
 using Sandbox.UI;
-namespace Sandbox.Classes;
+namespace Sandbox.Classes.Decals;
 
 public readonly record struct InWorldValueStyle
 {
@@ -27,7 +27,10 @@ public readonly record struct InWorldValueStyle
 	}
 
 
-	public InWorldValueStyle WithAccent( Color accent ) { return this with { Border = accent }; }
+	public InWorldValueStyle WithAccent( Color accent )
+	{
+		return this with { Border = accent };
+	}
 }
 
 /// <summary>
@@ -76,8 +79,14 @@ public static class InWorldValueTextureRenderer
 	}
 
 
-	public static void ClearCache() { Cache.Clear(); }
+	public static void ClearCache()
+	{
+		Cache.Clear();
+	}
 
 
-	private static Rect Inset( Rect rect, float amount ) { return new Rect( rect.Left + amount, rect.Top + amount, rect.Width - amount * 2f, rect.Height - amount * 2f ); }
+	private static Rect Inset( Rect rect, float amount )
+	{
+		return new Rect( rect.Left + amount, rect.Top + amount, rect.Width - amount * 2f, rect.Height - amount * 2f );
+	}
 }

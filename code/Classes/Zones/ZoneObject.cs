@@ -1,7 +1,9 @@
 #nullable enable
 
+using Sandbox.Classes.Cards;
+using Sandbox.Classes.Decals;
 using System;
-namespace Sandbox.Classes;
+namespace Sandbox.Classes.Zones;
 
 public enum ZoneType
 {
@@ -156,7 +158,10 @@ public sealed class ZoneObject : Component
 	}
 
 
-	public static ZoneObject? Find( Guid zoneId ) { return zoneId != Guid.Empty && Registry.TryGetValue( zoneId, out ZoneObject? zone )? zone : null; }
+	public static ZoneObject? Find( Guid zoneId )
+	{
+		return zoneId != Guid.Empty && Registry.TryGetValue( zoneId, out ZoneObject? zone )? zone : null;
+	}
 
 
 	public bool CanAccept( CardObject card )
@@ -173,19 +178,13 @@ public sealed class ZoneObject : Component
 		RequireAuthority();
 
 		if ( card.GameObject.Network.IsProxy )
-		{
 			throw new InvalidOperationException( "Zone authority must also own cards it moves." );
-		}
 
 		if ( !CanAccept( card ) )
-		{
 			throw new InvalidOperationException( $"{ZoneType} zone is at capacity." );
-		}
 
 		if ( card.ZoneId != Guid.Empty && card.ZoneId != ZoneId )
-		{
 			Find( card.ZoneId )?.RemoveCard( card, false, true );
-		}
 
 		_cards.Remove( card );
 		int insertionIndex = index < 0? _cards.Count : index.Clamp( 0, _cards.Count );
@@ -197,7 +196,10 @@ public sealed class ZoneObject : Component
 	}
 
 
-	public bool RemoveCard( CardObject card ) { return RemoveCard( card, true, true ); }
+	public bool RemoveCard( CardObject card )
+	{
+		return RemoveCard( card, true, true );
+	}
 
 
 	public CardObject? DrawTop( MtgZoneCardState destinationState = MtgZoneCardState.Preserve )
@@ -467,8 +469,6 @@ public sealed class ZoneObject : Component
 	private void RequireAuthority()
 	{
 		if ( GameObject.Network.IsProxy )
-		{
 			throw new InvalidOperationException( "Only zone authority can change zone contents." );
-		}
 	}
 }

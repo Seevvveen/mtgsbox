@@ -1,6 +1,7 @@
 #nullable enable
 
-namespace Sandbox.Classes;
+using Sandbox.Classes.Cards;
+namespace Sandbox.Framework.GameInfo;
 
 /// <summary>
 ///     Asset metadata shared by an MTG rules prefab and its lobby.
@@ -32,9 +33,7 @@ public sealed class GameFormat : GameResource
 	public override void ConfigurePublishing( ResourcePublishContext context )
 	{
 		if ( RulesPrefab is null )
-		{
 			context.SetPublishingDisabled( "Invalid: missing an MTG rules prefab." );
-		}
 
 		context.IncludeCode = true;
 	}

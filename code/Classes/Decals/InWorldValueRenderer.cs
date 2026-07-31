@@ -1,9 +1,10 @@
 #nullable enable
 
+using Sandbox.Classes.Cards;
 using Sandbox.Classes.Cards.ManaSymbols;
 using System;
 using System.Text;
-namespace Sandbox.Classes;
+namespace Sandbox.Classes.Decals;
 
 /// <summary>
 ///     Owns keyed, projected in-world values for any game component.
@@ -217,5 +218,8 @@ public sealed class InWorldActionButton : Component
 	}
 
 
-	public void Invoke() { _callback?.Invoke(); }
+	public void Invoke()
+	{
+		_callback?.Invoke();
+	}
 }

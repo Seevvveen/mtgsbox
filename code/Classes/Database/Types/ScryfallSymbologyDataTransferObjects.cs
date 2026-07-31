@@ -2,7 +2,7 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
-namespace Sandbox.Classes.CardDatabase;
+namespace Sandbox.Classes.Database.Types;
 
 /// <summary>
 ///     Direct mirror of Scryfall's /symbology list response.

@@ -1,7 +1,10 @@
 #nullable enable
 
+using Sandbox.Classes.Cards;
+using Sandbox.Classes.Zones;
+using Sandbox.Framework;
 using System;
-namespace Sandbox.Classes;
+namespace Sandbox.Classes.Decals;
 
 /// <summary>
 ///     Keeps a zone's public card count displayed beside its marker.
@@ -103,10 +106,16 @@ public sealed class CardValueIndicators : Component
 	}
 
 
-	public void SetStatus( string key, string label, Color accent, int row = 0 ) { _values?.SetValue( $"status:{key}", label, new Vector3( -CardMesh.Width * 0.62f, row * CardMesh.Height * 0.13f, CardMesh.Thickness ), accent, CardMesh.Width * 0.5f ); }
+	public void SetStatus( string key, string label, Color accent, int row = 0 )
+	{
+		_values?.SetValue( $"status:{key}", label, new Vector3( -CardMesh.Width * 0.62f, row * CardMesh.Height * 0.13f, CardMesh.Thickness ), accent, CardMesh.Width * 0.5f );
+	}
 
 
-	public void RemoveStatus( string key ) { _values?.Remove( $"status:{key}" ); }
+	public void RemoveStatus( string key )
+	{
+		_values?.Remove( $"status:{key}" );
+	}
 
 
 	public void SetQuickAction( string key, string label, Action<CardObject> callback, Color accent, int row = 0 )
@@ -127,5 +136,8 @@ public sealed class CardValueIndicators : Component
 	}
 
 
-	public void RemoveQuickAction( string key ) { _values?.Remove( $"action:{key}" ); }
+	public void RemoveQuickAction( string key )
+	{
+		_values?.Remove( $"action:{key}" );
+	}
 }

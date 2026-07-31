@@ -45,7 +45,10 @@ public sealed class DatabaseDeckCardResolver : IDeckCardResolver
 	}
 
 
-	private static DeckCardResolution FromSingle( NormalizedCard? card ) { return new DeckCardResolution { Card = card is null? null : CreateReference( card ), MatchCount = card is null? 0 : 1 }; }
+	private static DeckCardResolution FromSingle( NormalizedCard? card )
+	{
+		return new DeckCardResolution { Card = card is null? null : CreateReference( card ), MatchCount = card is null? 0 : 1 };
+	}
 
 
 	private static DeckCardReference CreateReference( NormalizedCard card )

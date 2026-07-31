@@ -21,7 +21,10 @@ public sealed class DeckWebsiteImporter
 	private readonly        DeckTextImporter _textImporter;
 
 
-	public DeckWebsiteImporter( IDeckCardResolver resolver ) { _textImporter = new DeckTextImporter( resolver ); }
+	public DeckWebsiteImporter( IDeckCardResolver resolver )
+	{
+		_textImporter = new DeckTextImporter( resolver );
+	}
 
 
 	public async Task<DeckImportResult> ImportAsync( string url, DeckImportOptions? options = null, CancellationToken cancellationToken = default(CancellationToken) )
@@ -29,35 +32,25 @@ public sealed class DeckWebsiteImporter
 		options ??= new DeckImportOptions();
 
 		if ( !Uri.TryCreate( url, UriKind.Absolute, out Uri? uri ) || !string.Equals( uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase ) )
-		{
 			return Failure( options, url, DeckImportIssueCode.InvalidUrl, "Deck URL must be a valid HTTPS URL." );
-		}
 
 		try
 		{
 			string host = uri.Host.ToLowerInvariant();
 
 			if ( IsHost( host, "moxfield.com" ) )
-			{
 				return await ImportMoxfieldAsync( uri, options, cancellationToken );
-			}
 
 			if ( IsHost( host, "archidekt.com" ) )
-			{
 				return await ImportArchidektAsync( uri, options, cancellationToken );
-			}
 
 			if ( IsHost( host, "scryfall.com" ) )
-			{
 				return Failure( options, url, DeckImportIssueCode.UnsupportedWebsite, "Scryfall deck pages are not supported. Use a pasted " + "list, Moxfield, or Archidekt." );
-			}
 
 			LegacyDeckRequest? request = CreateLegacyRequest( uri );
 
 			if ( request is null )
-			{
 				return Failure( options, url, DeckImportIssueCode.UnsupportedWebsite, $"Deck website '{uri.Host}' is not supported." );
-			}
 
 			string payload = await RequestStringAsync( request.Url, cancellationToken );
 
@@ -82,9 +75,7 @@ public sealed class DeckWebsiteImporter
 		Match match = Regex.Match( uri.AbsolutePath, @"/decks/(?<id>[^/?]+)", RegexOptions.IgnoreCase );
 
 		if ( !match.Success )
-		{
 			return Failure( options, uri.ToString(), DeckImportIssueCode.InvalidUrl, "Invalid Moxfield deck URL." );
-		}
 
 		string deckId   = match.Groups["id"].Value;
 		string endpoint = $"https://api2.moxfield.com/v2/decks/all/{deckId}/";
@@ -111,9 +102,7 @@ public sealed class DeckWebsiteImporter
 		Match match = Regex.Match( uri.AbsolutePath, @"/decks/(?<id>\d+)", RegexOptions.IgnoreCase );
 
 		if ( !match.Success )
-		{
 			return Failure( options, uri.ToString(), DeckImportIssueCode.InvalidUrl, "Invalid Archidekt deck URL." );
-		}
 
 		string deckId   = match.Groups["id"].Value;
 		string endpoint = $"https://archidekt.com/api/decks/{deckId}/cards/";
@@ -127,9 +116,7 @@ public sealed class DeckWebsiteImporter
 			rows = cards;
 
 		if ( rows.ValueKind != JsonValueKind.Array )
-		{
 			throw new JsonException( "Archidekt response did not contain a card array." );
-		}
 
 		Dictionary<string, StringBuilder> bySection = new Dictionary<string, StringBuilder>( StringComparer.OrdinalIgnoreCase );
 
@@ -274,19 +261,13 @@ public sealed class DeckWebsiteImporter
 		}
 
 		if ( IsHost( host, "mtgdecks.net" ) )
-		{
 			return new LegacyDeckRequest( url.TrimEnd( '/' ) + "/dec", "mtgdecks", LegacyPayloadKind.Text );
-		}
 
 		if ( IsHost( host, "deckbox.org" ) )
-		{
 			return new LegacyDeckRequest( url.TrimEnd( '/' ) + "/export", "deckbox", LegacyPayloadKind.DeckboxHtml );
-		}
 
 		if ( IsHost( host, "tappedout.net" ) )
-		{
 			return new LegacyDeckRequest( AppendQuery( Regex.Replace( url, @".cb=\d+", "" ), "fmt=csv" ), "tappedout", LegacyPayloadKind.Csv );
-		}
 
 		if ( IsHost( host, "mtggoldfish.com" ) && uri.AbsolutePath.Contains( "/deck/", StringComparison.OrdinalIgnoreCase ) )
 		{
@@ -464,22 +445,40 @@ public sealed class DeckWebsiteImporter
 	}
 
 
-	private static DeckImportOptions WithSource( DeckImportOptions options, string url, string site, string? externalId ) { return options with { Source = new DeckSource { Kind = "website", Site = site, ExternalId = externalId, Url = url } }; }
+	private static DeckImportOptions WithSource( DeckImportOptions options, string url, string site, string? externalId )
+	{
+		return options with { Source = new DeckSource { Kind = "website", Site = site, ExternalId = externalId, Url = url } };
+	}
 
 
-	private static DeckImportResult Failure( DeckImportOptions options, string? url, DeckImportIssueCode code, string message ) { return new DeckImportResult { Deck = new Deck { Name = options.DeckName, FormatCode = options.FormatCode, Source = new DeckSource { Kind = "website", Url = url } }, Issues = [ new DeckImportIssue { Severity = DeckImportIssueSeverity.Error, Code = code, Message = message } ] }; }
+	private static DeckImportResult Failure( DeckImportOptions options, string? url, DeckImportIssueCode code, string message )
+	{
+		return new DeckImportResult { Deck = new Deck { Name = options.DeckName, FormatCode = options.FormatCode, Source = new DeckSource { Kind = "website", Url = url } }, Issues = [ new DeckImportIssue { Severity = DeckImportIssueSeverity.Error, Code = code, Message = message } ] };
+	}
 
 
-	private static bool IsHost( string actual, string expected ) { return string.Equals( actual, expected, StringComparison.OrdinalIgnoreCase ) || actual.EndsWith( $".{expected}", StringComparison.OrdinalIgnoreCase ); }
+	private static bool IsHost( string actual, string expected )
+	{
+		return string.Equals( actual, expected, StringComparison.OrdinalIgnoreCase ) || actual.EndsWith( $".{expected}", StringComparison.OrdinalIgnoreCase );
+	}
 
 
-	private static string AppendQuery( string url, string query ) { return url + ( url.Contains( '?' )? "&" : "?" ) + query; }
+	private static string AppendQuery( string url, string query )
+	{
+		return url + ( url.Contains( '?' )? "&" : "?" ) + query;
+	}
 
 
-	private static string GetLastPathSegment( Uri uri ) { return uri.AbsolutePath.TrimEnd( '/' )[( uri.AbsolutePath.TrimEnd( '/' ).LastIndexOf( '/' ) + 1 )..]; }
+	private static string GetLastPathSegment( Uri uri )
+	{
+		return uri.AbsolutePath.TrimEnd( '/' )[( uri.AbsolutePath.TrimEnd( '/' ).LastIndexOf( '/' ) + 1 )..];
+	}
 
 
-	private static string? GetString( JsonElement element, string property ) { return element.ValueKind == JsonValueKind.Object && element.TryGetProperty( property, out JsonElement value ) && value.ValueKind == JsonValueKind.String? value.GetString() : null; }
+	private static string? GetString( JsonElement element, string property )
+	{
+		return element.ValueKind == JsonValueKind.Object && element.TryGetProperty( property, out JsonElement value ) && value.ValueKind == JsonValueKind.String? value.GetString() : null;
+	}
 
 
 	private static int? GetInt32( JsonElement element, string property )

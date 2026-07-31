@@ -1,6 +1,5 @@
 #nullable enable
 
-using Sandbox.Classes.CardDatabase;
 using Sandbox.Classes.Database.Types;
 using System;
 using System.IO;
@@ -71,9 +70,7 @@ public static class ScryfallSupplementalNormalizer
 	private static string RequireString( string? value, string field )
 	{
 		if ( string.IsNullOrWhiteSpace( value ) )
-		{
 			throw new InvalidDataException( $"Required Scryfall field '{field}' is missing." );
-		}
 
 		return value;
 	}

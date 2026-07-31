@@ -1,7 +1,6 @@
 #nullable enable
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Sandbox.Classes.CardDatabase;
 using Sandbox.Classes.Cards;
 using Sandbox.Classes.Cards.Colors;
 using Sandbox.Classes.Cards.Legality;

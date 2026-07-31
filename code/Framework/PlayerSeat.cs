@@ -1,7 +1,9 @@
 #nullable enable
 
+using Sandbox.Classes.Zones;
+using Sandbox.Framework.GameInfo;
 using System;
-namespace Sandbox.Classes;
+namespace Sandbox.Framework;
 
 /// <summary>
 ///     Public, synchronized state for one player in an MTG match. Submitted deck

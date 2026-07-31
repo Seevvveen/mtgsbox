@@ -54,10 +54,16 @@ public readonly record struct ManaSymbol
 	public int GenericAmount { get; }
 
 
-	public bool ContainsColor( MagicColor color ) { return Colors.Contains( color ); }
+	public bool ContainsColor( MagicColor color )
+	{
+		return Colors.Contains( color );
+	}
 
 
-	public override string ToString() { return _code is null? "" : $"{{{_code}}}"; }
+	public override string ToString()
+	{
+		return _code is null? "" : $"{{{_code}}}";
+	}
 
 
 	/// <summary>
@@ -70,9 +76,7 @@ public readonly record struct ManaSymbol
 	public static ManaSymbol Parse( SymbolIdentifier identifier )
 	{
 		if ( !identifier.IsValid )
-		{
 			throw new ArgumentException( "Cannot parse an uninitialized symbol identifier.", nameof(identifier) );
-		}
 
 		return ParseCode( identifier.Code );
 	}
@@ -82,7 +86,10 @@ public readonly record struct ManaSymbol
 	///     Resolves either a loose code such as W/U or a canonical identifier
 	///     such as {W/U}.
 	/// </summary>
-	public static ManaSymbol Parse( string value ) { return Parse( SymbolIdentifier.Parse( value ) ); }
+	public static ManaSymbol Parse( string value )
+	{
+		return Parse( SymbolIdentifier.Parse( value ) );
+	}
 
 
 	public static bool TryParse( string? value, out ManaSymbol symbol )
@@ -127,9 +134,7 @@ public readonly record struct ManaSymbol
 		if ( IsAsciiNumber( code ) )
 		{
 			if ( !int.TryParse( code, NumberStyles.None, CultureInfo.InvariantCulture, out int amount ) )
-			{
 				throw new FormatException( $"Generic mana value '{code}' is too large." );
-			}
 
 			return new ManaSymbol( amount.ToString( CultureInfo.InvariantCulture ), ManaSymbolKind.Generic, ColorSet.Colorless, amount );
 		}
@@ -172,9 +177,7 @@ public readonly record struct ManaSymbol
 			return ParseTwoPartSymbol( code, parts[0], parts[1] );
 
 		if ( parts.Length == 3 )
-		{
 			return ParseThreePartSymbol( code, parts[0], parts[1], parts[2] );
-		}
 
 		throw new FormatException( $"Unsupported mana symbol '{{{code}}}'." );
 	}
@@ -184,27 +187,19 @@ public readonly record struct ManaSymbol
 	{
 		// {W/P}, {U/P}, {C/P}, etc.
 		if ( second == "P" && TryGetManaComponentColors( first, out ColorSet phyrexianColors ) )
-		{
 			return new ManaSymbol( code, ManaSymbolKind.Phyrexian, phyrexianColors );
-		}
 
 		// {2/W}, {2/U}, etc.
 		if ( first == "2" && TryGetColor( second, out MagicColor genericHybridColor ) )
-		{
 			return new ManaSymbol( code, ManaSymbolKind.GenericHybrid, ColorSet.FromColor( genericHybridColor ) );
-		}
 
 		// {C/W}, {C/U}, etc.
 		if ( first == "C" && TryGetColor( second, out MagicColor colorlessHybridColor ) )
-		{
 			return new ManaSymbol( code, ManaSymbolKind.ColorlessHybrid, ColorSet.FromColor( colorlessHybridColor ) );
-		}
 
 		// {W/U}, {B/R}, etc.
 		if ( TryGetColor( first, out MagicColor firstColor ) && TryGetColor( second, out MagicColor secondColor ) && firstColor != secondColor )
-		{
 			return new ManaSymbol( code, ManaSymbolKind.Hybrid, ColorSet.FromColors( firstColor, secondColor ) );
-		}
 
 		throw new FormatException( $"Unsupported mana symbol '{{{code}}}'." );
 	}
@@ -214,15 +209,16 @@ public readonly record struct ManaSymbol
 	{
 		// {W/U/P}, {B/G/P}, etc.
 		if ( third == "P" && TryGetColor( first, out MagicColor firstColor ) && TryGetColor( second, out MagicColor secondColor ) && firstColor != secondColor )
-		{
 			return new ManaSymbol( code, ManaSymbolKind.HybridPhyrexian, ColorSet.FromColors( firstColor, secondColor ) );
-		}
 
 		throw new FormatException( $"Unsupported mana symbol '{{{code}}}'." );
 	}
 
 
-	private static ManaSymbol Colored( string code, MagicColor color ) { return new ManaSymbol( code, ManaSymbolKind.Colored, ColorSet.FromColor( color ) ); }
+	private static ManaSymbol Colored( string code, MagicColor color )
+	{
+		return new ManaSymbol( code, ManaSymbolKind.Colored, ColorSet.FromColor( color ) );
+	}
 
 
 	private static bool TryGetManaComponentColors( string value, out ColorSet colors )

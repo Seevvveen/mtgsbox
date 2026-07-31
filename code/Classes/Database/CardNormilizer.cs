@@ -1,6 +1,5 @@
 #nullable enable
 
-using Sandbox.Classes.CardDatabase;
 using Sandbox.Classes.Cards;
 using Sandbox.Classes.Cards.CardFrames;
 using Sandbox.Classes.Cards.Colors;
@@ -134,9 +133,7 @@ public static class ScryfallCardNormalizer
 			return [ NormalizeSingleFace( dto ) ];
 
 		if ( dto.CardFaces.Length == 0 )
-		{
 			throw new InvalidDataException( "Scryfall field 'card_faces' cannot be an empty array." );
-		}
 
 		CardFace[] faces = new CardFace[dto.CardFaces.Length];
 
@@ -368,7 +365,10 @@ public static class ScryfallCardNormalizer
 	}
 
 
-	private static ColorSet? ParseOptionalColors( string[]? values, string field ) { return values is null? null : ParseColors( values, field ); }
+	private static ColorSet? ParseOptionalColors( string[]? values, string field )
+	{
+		return values is null? null : ParseColors( values, field );
+	}
 
 
 	private static ColorSet ParseColors( string[] values, string field )
@@ -401,22 +401,40 @@ public static class ScryfallCardNormalizer
 	}
 
 
-	private static CardDefense? ToDefense( string? value ) { return value is null? null : new CardDefense( value ); }
+	private static CardDefense? ToDefense( string? value )
+	{
+		return value is null? null : new CardDefense( value );
+	}
 
 
-	private static HandModifier? ToHandModifier( string? value ) { return value is null? null : new HandModifier( value ); }
+	private static HandModifier? ToHandModifier( string? value )
+	{
+		return value is null? null : new HandModifier( value );
+	}
 
 
-	private static LifeModifier? ToLifeModifier( string? value ) { return value is null? null : new LifeModifier( value ); }
+	private static LifeModifier? ToLifeModifier( string? value )
+	{
+		return value is null? null : new LifeModifier( value );
+	}
 
 
-	private static CardLoyalty? ToLoyalty( string? value ) { return value is null? null : new CardLoyalty( value ); }
+	private static CardLoyalty? ToLoyalty( string? value )
+	{
+		return value is null? null : new CardLoyalty( value );
+	}
 
 
-	private static CardPower? ToPower( string? value ) { return value is null? null : new CardPower( value ); }
+	private static CardPower? ToPower( string? value )
+	{
+		return value is null? null : new CardPower( value );
+	}
 
 
-	private static CardToughness? ToToughness( string? value ) { return value is null? null : new CardToughness( value ); }
+	private static CardToughness? ToToughness( string? value )
+	{
+		return value is null? null : new CardToughness( value );
+	}
 
 
 	private static CardLayout ParseLayout( string value )
@@ -577,24 +595,34 @@ public static class ScryfallCardNormalizer
 		Guid[] result = new Guid[values.Length];
 
 		for ( int index = 0; index < values.Length; index++ )
-		{
 			result[index] = ParseRequiredGuid( values[index], $"{field}[{index}]" );
-		}
 
 		return result;
 	}
 
 
-	private static T[] CopyArray<T>( T[]? values ) { return values is null? [ ] : [ .. values ]; }
+	private static T[] CopyArray<T>( T[]? values )
+	{
+		return values is null? [ ] : [ .. values ];
+	}
 
 
-	private static T[]? CopyNullableArray<T>( T[]? values ) { return values is null? null : [ .. values ]; }
+	private static T[]? CopyNullableArray<T>( T[]? values )
+	{
+		return values is null? null : [ .. values ];
+	}
 
 
-	private static Dictionary<string, string> CopyDictionary( Dictionary<string, string>? values ) { return values is null? new Dictionary<string, string>( StringComparer.OrdinalIgnoreCase ) : new Dictionary<string, string>( values, StringComparer.OrdinalIgnoreCase ); }
+	private static Dictionary<string, string> CopyDictionary( Dictionary<string, string>? values )
+	{
+		return values is null? new Dictionary<string, string>( StringComparer.OrdinalIgnoreCase ) : new Dictionary<string, string>( values, StringComparer.OrdinalIgnoreCase );
+	}
 
 
-	private static Dictionary<string, string>? CopyNullableDictionary( Dictionary<string, string>? values ) { return values is null? null : CopyDictionary( values ); }
+	private static Dictionary<string, string>? CopyNullableDictionary( Dictionary<string, string>? values )
+	{
+		return values is null? null : CopyDictionary( values );
+	}
 
 
 	private static Dictionary<string, JsonElement> CopyExtensions( Dictionary<string, JsonElement>? values )
@@ -611,13 +639,22 @@ public static class ScryfallCardNormalizer
 	}
 
 
-	private static InvalidDataException InvalidValue( string field, string value, string valueType, Exception innerException ) { return new InvalidDataException( $"Scryfall field '{field}' contains invalid {valueType} " + $"'{value}'.", innerException ); }
+	private static InvalidDataException InvalidValue( string field, string value, string valueType, Exception innerException )
+	{
+		return new InvalidDataException( $"Scryfall field '{field}' contains invalid {valueType} " + $"'{value}'.", innerException );
+	}
 
 
-	private static InvalidDataException UnknownValue( string field, string value ) { return new InvalidDataException( $"Unknown Scryfall {field} value '{value}'." ); }
+	private static InvalidDataException UnknownValue( string field, string value )
+	{
+		return new InvalidDataException( $"Unknown Scryfall {field} value '{value}'." );
+	}
 
 
-	private static InvalidDataException MissingField( string field ) { return new InvalidDataException( $"Required Scryfall field '{field}' is missing." ); }
+	private static InvalidDataException MissingField( string field )
+	{
+		return new InvalidDataException( $"Required Scryfall field '{field}' is missing." );
+	}
 
 
 	private static string RequireString( string? value, string field )
@@ -634,9 +671,7 @@ public static class ScryfallCardNormalizer
 		string actual = RequireString( value, field );
 
 		if ( !string.Equals( actual, expected, StringComparison.Ordinal ) )
-		{
 			throw new InvalidDataException( $"Expected Scryfall field '{field}' to be '{expected}', " + $"but received '{actual}'." );
-		}
 
 		return actual;
 	}

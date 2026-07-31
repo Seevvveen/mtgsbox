@@ -1,7 +1,7 @@
 #nullable enable
 
 using System;
-namespace Sandbox.Classes;
+namespace Sandbox.Framework.Table;
 
 /// <summary>
 ///     Smooth local camera for the MTG table.

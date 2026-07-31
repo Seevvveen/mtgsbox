@@ -1,9 +1,8 @@
 ﻿using Sandbox.Classes.Cards.Colors.Util;
-using Sandbox.Classes.Cards.ManaSymbols;
 using System;
 using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;
-namespace Sandbox.Classes.Cards.Colors;
+namespace Sandbox.Classes.Cards.ManaSymbols;
 
 #nullable enable
 
@@ -71,7 +70,10 @@ public readonly struct ProducedManaSet : IEquatable<ProducedManaSet>
 	}
 
 
-	public static ProducedManaSet FromSymbol( SymbolIdentifier symbol ) { return new ProducedManaSet( [ symbol ] ); }
+	public static ProducedManaSet FromSymbol( SymbolIdentifier symbol )
+	{
+		return new ProducedManaSet( [ symbol ] );
+	}
 
 
 	public static ProducedManaSet FromSymbols( params SymbolIdentifier[] symbols )
@@ -113,7 +115,10 @@ public readonly struct ProducedManaSet : IEquatable<ProducedManaSet>
 	}
 
 
-	public static ProducedManaSet? FromNullableScryfall( string[]? values ) { return values is null? null : FromScryfall( values ); }
+	public static ProducedManaSet? FromNullableScryfall( string[]? values )
+	{
+		return values is null? null : FromScryfall( values );
+	}
 
 
 	public bool Contains( SymbolIdentifier symbol )
@@ -131,7 +136,10 @@ public readonly struct ProducedManaSet : IEquatable<ProducedManaSet>
 	/// <summary>
 	///     Checks for a loose Scryfall value such as W, C, or T.
 	/// </summary>
-	public bool ContainsScryfallSymbol( string value ) { return Contains( ParseScryfallSymbol( value ) ); }
+	public bool ContainsScryfallSymbol( string value )
+	{
+		return Contains( ParseScryfallSymbol( value ) );
+	}
 
 
 	public bool ContainsAll( ProducedManaSet other )
@@ -253,7 +261,10 @@ public readonly struct ProducedManaSet : IEquatable<ProducedManaSet>
 	}
 
 
-	public override string ToString() { return IsEmpty? "None" : string.Join( "", ToScryfallArray() ); }
+	public override string ToString()
+	{
+		return IsEmpty? "None" : string.Join( "", ToScryfallArray() );
+	}
 
 
 	public bool Equals( ProducedManaSet other )
@@ -271,7 +282,10 @@ public readonly struct ProducedManaSet : IEquatable<ProducedManaSet>
 	}
 
 
-	public override bool Equals( object? obj ) { return obj is ProducedManaSet other && Equals( other ); }
+	public override bool Equals( object? obj )
+	{
+		return obj is ProducedManaSet other && Equals( other );
+	}
 
 
 	public override int GetHashCode()
@@ -288,9 +302,16 @@ public readonly struct ProducedManaSet : IEquatable<ProducedManaSet>
 	}
 
 
-	public static bool operator ==( ProducedManaSet left, ProducedManaSet right ) { return left.Equals( right ); }
+	public static bool operator ==( ProducedManaSet left, ProducedManaSet right )
+	{
+		return left.Equals( right );
+	}
 
-	public static bool operator !=( ProducedManaSet left, ProducedManaSet right ) { return !left.Equals( right ); }
+
+	public static bool operator !=( ProducedManaSet left, ProducedManaSet right )
+	{
+		return !left.Equals( right );
+	}
 
 
 	/// <summary>
@@ -299,15 +320,16 @@ public readonly struct ProducedManaSet : IEquatable<ProducedManaSet>
 	internal static ProducedManaSet FromScryfallSymbol( string? value )
 	{
 		if ( value is null )
-		{
 			throw new ArgumentException( "Scryfall produced-mana symbols cannot be null.", nameof(value) );
-		}
 
 		return FromSymbol( ParseScryfallSymbol( value ) );
 	}
 
 
-	private static SymbolIdentifier ParseScryfallSymbol( string value ) { return SymbolIdentifier.Parse( value ); }
+	private static SymbolIdentifier ParseScryfallSymbol( string value )
+	{
+		return SymbolIdentifier.Parse( value );
+	}
 
 
 	private static SymbolIdentifier[] Normalize( IEnumerable<SymbolIdentifier> symbols )
@@ -317,9 +339,7 @@ public readonly struct ProducedManaSet : IEquatable<ProducedManaSet>
 		foreach ( SymbolIdentifier symbol in symbols )
 		{
 			if ( !symbol.IsValid )
-			{
 				throw new ArgumentException( "A produced-mana set cannot contain an " + "uninitialized symbol.", nameof(symbols) );
-			}
 
 			if ( !Contains( result, symbol ) )
 				result.Add( symbol );
@@ -373,5 +393,8 @@ public readonly struct ProducedManaSet : IEquatable<ProducedManaSet>
 	}
 
 
-	private static string GetSymbolCode( SymbolIdentifier symbol ) { return symbol.Code; }
+	private static string GetSymbolCode( SymbolIdentifier symbol )
+	{
+		return symbol.Code;
+	}
 }

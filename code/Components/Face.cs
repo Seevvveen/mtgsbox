@@ -50,7 +50,10 @@ public sealed class Face : PanelComponent
 	}
 
 
-	protected override int BuildHash() { return HashCode.Combine( _url ); }
+	protected override int BuildHash()
+	{
+		return HashCode.Combine( _url );
+	}
 
 
 	private void BeginTextureLoad()
@@ -80,9 +83,7 @@ public sealed class Face : PanelComponent
 		catch ( Exception exception )
 		{
 			if ( generation == _textureGeneration )
-			{
 				Log.Warning( $"Unable to load card face '{url}': " + $"{exception.Message}" );
-			}
 		}
 	}
 }
