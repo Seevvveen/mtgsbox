@@ -3,7 +3,7 @@
 using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-namespace Sandbox.Classes;
+namespace Sandbox.Classes.Deck;
 
 /// <summary>
 ///     A portable, editable deck definition. It stores compact card references

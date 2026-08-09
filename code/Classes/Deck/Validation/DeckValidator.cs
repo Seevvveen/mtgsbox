@@ -4,8 +4,9 @@ using Sandbox.Classes.Cards.Legality;
 using Sandbox.Classes.Database.Types;
 using System;
 using RuntimeCardDatabase = Sandbox.Classes.Database.CardDatabase;
+using DeckDefinition = Sandbox.Classes.Deck.Deck;
 
-namespace Sandbox.Classes.DeckValidation;
+namespace Sandbox.Classes.Deck.Validation;
 
 /// <summary>
 ///     Server-safe deck validation. Every card is resolved from the authoritative
@@ -13,7 +14,7 @@ namespace Sandbox.Classes.DeckValidation;
 /// </summary>
 public static class DeckValidator
 {
-	public static DeckValidationReport Validate( Deck deck, DeckFormatDefinition format, IEnumerable<IDeckFormatRule>? additionalRules = null )
+	public static DeckValidationReport Validate( DeckDefinition deck, DeckFormatDefinition format, IEnumerable<IDeckFormatRule>? additionalRules = null )
 	{
 		ArgumentNullException.ThrowIfNull( deck );
 		ArgumentNullException.ThrowIfNull( format );
@@ -126,7 +127,7 @@ public static class DeckValidator
 	}
 
 
-	private static void ValidateCopyCounts( Deck deck, DeckFormatDefinition format, Dictionary<Guid, int> copies, DeckValidationReport report )
+	private static void ValidateCopyCounts( DeckDefinition deck, DeckFormatDefinition format, Dictionary<Guid, int> copies, DeckValidationReport report )
 	{
 		foreach ( KeyValuePair<Guid, int> pair in copies )
 		{

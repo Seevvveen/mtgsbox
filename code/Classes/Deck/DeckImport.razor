@@ -1,0 +1,146 @@
+@using Sandbox;
+@using Sandbox.UI;
+@using Sandbox.Classes.Deck;
+@using Sandbox.Classes.Deck.Import
+
+@inherits PanelComponent
+@namespace Sandbox.Classes.Deck
+
+<root>
+	<div class="window">
+		<div class="header">
+			<div class="title">Deck Import</div>
+			<div class="subtitle">
+				Paste a plain-text deck list.
+			</div>
+		</div>
+
+		<div class="section">
+			<div class="section-title">Deck List</div>
+
+			<TextEntry
+				class="deck-input"
+				Value:bind="@DeckText"
+				Placeholder="Paste deck list here..."
+				Multiline="@true" />
+
+			<button class="import-button" onclick="@ImportText">
+				Import Text
+			</button>
+		</div>
+
+		@if ( Result is not null )
+		{
+			<div class="result">
+				<div class="result-header">
+					<div class="result-title">
+						@Result.Deck.Name
+					</div>
+
+					<div>
+						@Result.Deck.Entries.Count entries
+					</div>
+				</div>
+
+				@if ( Result.Issues.Count > 0 )
+				{
+					<div class="issues">
+						@foreach ( var issue in Result.Issues )
+						{
+							<div class="issue">
+								@issue.Severity:
+								@issue.Message
+							</div>
+						}
+					</div>
+				}
+
+				<div class="cards">
+					@foreach ( var entry in Result.Deck.Entries )
+					{
+						<div class="card-entry">
+							<div class="quantity">
+								@entry.Quantity×
+							</div>
+
+							<div class="card-name">
+								@entry.Card.Name
+							</div>
+
+							<div class="card-info">
+								@entry.Card.SetCode
+								@entry.Card.CollectorNumber
+							</div>
+
+							<div class="section-name">
+								@entry.Section
+							</div>
+						</div>
+					}
+				</div>
+			</div>
+		}
+
+		<div class="actions">
+			<button
+				class="clear-button"
+				onclick="@Clear">
+				Clear
+			</button>
+		</div>
+	</div>
+</root>
+
+@code
+{
+	private Panel Window { get; set; }
+
+	protected override void OnTreeFirstBuilt()
+	{
+		base.OnTreeFirstBuilt();
+		Window.CanDragScroll = false;
+	}
+	
+	
+	private string DeckText { get; set; } = string.Empty;
+
+	public DeckImportResult? Result { get; set; }
+
+
+	private void ImportText()
+	{
+		if ( string.IsNullOrWhiteSpace( DeckText ) )
+			return;
+
+		PlainTextDeckParser importer = new();
+
+		Result = importer.Import(
+			DeckText,
+			new DeckImportOptions
+			{
+				DeckName = "Imported Deck"
+			}
+		);
+
+		
+		
+		GameObject.Enabled = false;
+	}
+
+
+	private void Clear()
+	{
+		DeckText = string.Empty;
+		Result = null;
+	}
+
+
+	protected override int BuildHash()
+	{
+		return System.HashCode.Combine(
+			DeckText,
+			Result
+		);
+	}
+	
+}

@@ -1,7 +1,8 @@
 #nullable enable
 
 using System;
-namespace Sandbox.Classes.DeckValidation;
+using DeckDefinition = Sandbox.Classes.Deck.Deck;
+namespace Sandbox.Classes.Deck.Validation;
 
 /// <summary>
 ///     Data-driven deck construction rules for one format. The format code remains
@@ -75,5 +76,5 @@ public sealed record DeckValidationReport
 
 public interface IDeckFormatRule
 {
-	void Validate( Deck deck, DeckFormatDefinition format, DeckValidationReport report );
+	void Validate( DeckDefinition deck, DeckFormatDefinition format, DeckValidationReport report );
 }

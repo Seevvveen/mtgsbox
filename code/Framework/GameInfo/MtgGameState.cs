@@ -13,19 +13,6 @@ public enum GameState
 	Finished
 }
 
-public enum TurnPhase
-{
-	Beginning,
-	PrecombatMain,
-	BeginningOfCombat,
-	DeclareAttackers,
-	DeclareBlockers,
-	CombatDamage,
-	EndOfCombat,
-	PostcombatMain,
-	Ending
-}
-
 public enum PlayerOutcome
 {
 	None,

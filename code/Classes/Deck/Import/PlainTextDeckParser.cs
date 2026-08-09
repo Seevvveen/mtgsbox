@@ -1,35 +1,23 @@
 #nullable enable
 
+using Sandbox.Classes.Database.Types;
 using System;
 using System.Text.RegularExpressions;
-namespace Sandbox.Classes.DeckImport;
+using RuntimeCardDatabase = Sandbox.Classes.Database.CardDatabase;
+namespace Sandbox.Classes.Deck.Import;
 
 /// <summary>
-///     Imports common MTGO/Moxfield-style text lists. Supported identities match
-///     the TTS importer: UUID, (SET) collector, [SET:collector], name plus set,
-///     and exact card name.
+///     Imports common plain-text deck lists. Supported identities include UUID,
+///     (SET) collector, [SET:collector], name plus set, and exact card name.
 /// </summary>
-public sealed class DeckTextImporter
+public sealed class PlainTextDeckParser
 {
-	private static readonly Regex QuantityPattern = new Regex( @"^(?<quantity>\d+)[xX]?\s+(?<card>.+)$" );
-
-	private static readonly Regex UuidPattern = new Regex( @"(?<id>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-" + @"[0-9a-fA-F]{4}-[0-9a-fA-F]{12})" );
-
-	private static readonly Regex SetCollectorPattern = new Regex( @"^(?<name>.+?)\s+\((?<set>[\w_]+)\)\s+" + @"(?<collector>\S+)(?:\s+.*)?$" );
-
-	private static readonly Regex BracketPattern = new Regex( @"^(?<name>.+?)\s+\[(?<set>[\w_]+):(?<collector>[^\]]+)\]" + @"(?:\s+.*)?$" );
-
-	private static readonly Regex NameSetPattern = new Regex( @"^(?<name>.+?)&set=(?<set>[\w_]+)$", RegexOptions.IgnoreCase );
-
-	private static readonly Regex SetOnlyPattern = new Regex( @"^(?<name>.+?)\s+\((?<set>[\w_]+)\)(?:\s+\*[^*]+\*)?$" );
-
-	private readonly IDeckCardResolver _resolver;
-
-
-	public DeckTextImporter( IDeckCardResolver resolver )
-	{
-		_resolver = resolver ?? throw new ArgumentNullException( nameof(resolver) );
-	}
+	private static readonly Regex QuantityPattern     = new Regex( @"^(?<quantity>\d+)[xX]?\s+(?<card>.+)$" );
+	private static readonly Regex UuidPattern         = new Regex( @"(?<id>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"     + @"[0-9a-fA-F]{4}-[0-9a-fA-F]{12})" );
+	private static readonly Regex SetCollectorPattern = new Regex( @"^(?<name>.+?)\s+\((?<set>[\w_]+)\)\s+"                   + @"(?<collector>\S+)(?:\s+.*)?$" );
+	private static readonly Regex BracketPattern      = new Regex( @"^(?<name>.+?)\s+\[(?<set>[\w_]+):(?<collector>[^\]]+)\]" + @"(?:\s+.*)?$" );
+	private static readonly Regex NameSetPattern      = new Regex( @"^(?<name>.+?)&set=(?<set>[\w_]+)$", RegexOptions.IgnoreCase );
+	private static readonly Regex SetOnlyPattern      = new Regex( @"^(?<name>.+?)\s+\((?<set>[\w_]+)\)(?:\s+\*[^*]+\*)?$" );
 
 
 	public DeckImportResult Import( string text, DeckImportOptions? options = null )
@@ -54,7 +42,6 @@ public sealed class DeckTextImporter
 			if ( TryReadSection( line, out string? nextSection ) )
 			{
 				section = nextSection;
-
 				continue;
 			}
 
@@ -64,14 +51,7 @@ public sealed class DeckTextImporter
 				line    = line[3..].Trim();
 			}
 
-			ParseLine(
-					  line,
-					  raw,
-					  index + 1,
-					  section,
-					  deck,
-					  issues
-					 );
+			ParseLine( line, raw, index + 1, section, deck, issues );
 		}
 
 		return new DeckImportResult { Deck = deck, Issues = issues };
@@ -89,7 +69,6 @@ public sealed class DeckTextImporter
 			if ( !int.TryParse( quantityMatch.Groups["quantity"].Value, out quantity ) || quantity <= 0 )
 			{
 				issues.Add( CreateLineIssue( DeckImportIssueCode.InvalidQuantity, lineNumber, raw, $"Invalid card quantity on line {lineNumber}." ) );
-
 				return;
 			}
 
@@ -97,12 +76,11 @@ public sealed class DeckTextImporter
 		}
 
 		DeckCardQuery      query      = ParseCardQuery( cardText );
-		DeckCardResolution resolution = _resolver.Resolve( query );
+		DeckCardResolution resolution = Resolve( query );
 
 		if ( !resolution.IsResolved )
 		{
 			issues.Add( CreateLineIssue( DeckImportIssueCode.CardNotFound, lineNumber, raw, $"Card not found: {cardText}" ) );
-
 			return;
 		}
 
@@ -166,6 +144,59 @@ public sealed class DeckTextImporter
 	}
 
 
+	private static DeckCardResolution Resolve( DeckCardQuery query )
+	{
+		if ( query.ScryfallId is Guid scryfallId && scryfallId != Guid.Empty )
+			return FromSingle( RuntimeCardDatabase.GetCard( scryfallId ) );
+
+		if ( !string.IsNullOrWhiteSpace( query.SetCode ) && !string.IsNullOrWhiteSpace( query.CollectorNumber ) )
+		{
+			NormalizedCard? byPrinting = RuntimeCardDatabase.FindPrinting( NormalizeSetCode( query.SetCode ), query.CollectorNumber );
+
+			if ( byPrinting is not null )
+				return FromSingle( byPrinting );
+		}
+
+		NormalizedCard[] matches = RuntimeCardDatabase.FindByName( query.Name );
+
+		if ( !string.IsNullOrWhiteSpace( query.SetCode ) )
+		{
+			string setCode = NormalizeSetCode( query.SetCode );
+			matches = matches.Where( card => string.Equals( card.Set.Code, setCode, StringComparison.OrdinalIgnoreCase ) ).ToArray();
+		}
+
+		return matches.Length == 0? new DeckCardResolution() : new DeckCardResolution { Card = CreateReference( matches[0] ), MatchCount = matches.Length };
+	}
+
+
+	private static DeckCardResolution FromSingle( NormalizedCard? card )
+	{
+		return new DeckCardResolution { Card = card is null? null : CreateReference( card ), MatchCount = card is null? 0 : 1 };
+	}
+
+
+	private static DeckCardReference CreateReference( NormalizedCard card )
+	{
+		return new DeckCardReference
+			   {
+				   ScryfallId      = card.Gameplay.ScryfallId,
+				   OracleId        = card.Gameplay.OracleId,
+				   Name            = card.Gameplay.Name,
+				   SetCode         = card.Set.Code,
+				   CollectorNumber = card.Presentation.CollectorNumber
+			   };
+	}
+
+
+	private static string NormalizeSetCode( string setCode )
+	{
+		string trimmed = setCode.Trim();
+		int    suffix  = trimmed.IndexOf( '_' );
+
+		return suffix < 0? trimmed : trimmed[..suffix];
+	}
+
+
 	private static string RemoveFinishMarker( string text )
 	{
 		return Regex.Replace( text, @"\s+\*(?:F|E)\*\s*$", "" );
@@ -216,5 +247,30 @@ public sealed class DeckTextImporter
 				   RawText    = raw,
 				   Message    = message
 			   };
+	}
+
+
+	private readonly record struct DeckCardQuery
+	{
+		public          Guid?   ScryfallId      { get; init; }
+		public required string  Name            { get; init; }
+		public          string? SetCode         { get; init; }
+		public          string? CollectorNumber { get; init; }
+	}
+
+	private sealed record DeckCardResolution
+	{
+		public DeckCardReference? Card       { get; init; }
+		public int                MatchCount { get; init; }
+
+		public bool IsResolved
+		{
+			get { return Card is not null; }
+		}
+
+		public bool IsAmbiguous
+		{
+			get { return MatchCount > 1; }
+		}
 	}
 }

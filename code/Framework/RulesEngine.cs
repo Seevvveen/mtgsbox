@@ -1,8 +1,8 @@
 #nullable enable
 
-using Sandbox.Classes;
 using Sandbox.Classes.Cards;
-using Sandbox.Classes.DeckValidation;
+using Sandbox.Classes.Deck;
+using Sandbox.Classes.Deck.Validation;
 using Sandbox.Classes.Zones;
 using Sandbox.Framework.GameInfo;
 using System;
@@ -32,21 +32,21 @@ public class RulesEngine : Component
 	//
 	public virtual bool CanMoveCard( PlayerSeat player, CardObject card, ZoneObject? source, ZoneObject destination )
 	{
-		if ( player.IsEliminated || Director.State != GameState.Playing || Director.PriorityPlayerId != player.PlayerId || !destination.CanAccept( card ) )
+		if ( player.IsEliminated || Director.State != GameState.Playing || !Director.Priority.HasPriority( player ) || !destination.CanAccept( card ) )
 			return false;
 
-		if ( destination.OwnerPlayerId != Guid.Empty && destination.OwnerPlayerId != player.PlayerId )
+		if ( destination.OwnerPlayerId != Guid.Empty && destination.OwnerPlayerId != player.ParticipantId )
 			return false;
 
 		Guid controller = card.ControllerPlayerId != Guid.Empty? card.ControllerPlayerId : card.OwnerPlayerId;
 
-		return controller == Guid.Empty || controller == player.PlayerId;
+		return controller == Guid.Empty || controller == player.ParticipantId;
 	}
 
 
 	public virtual bool CanFlipCard( PlayerSeat player, CardObject card )
 	{
-		return !player.IsEliminated && ( card.ControllerPlayerId == player.PlayerId || card.OwnerPlayerId == player.PlayerId );
+		return !player.IsEliminated && ( card.ControllerPlayerId == player.ParticipantId || card.OwnerPlayerId == player.ParticipantId );
 	}
 
 
@@ -58,7 +58,7 @@ public class RulesEngine : Component
 
 	public virtual bool CanEndTurn( PlayerSeat player )
 	{
-		return Director.ActivePlayerId == player.PlayerId;
+		return Director.TurnManager.ActivePlayerId == player.ParticipantId;
 	}
 
 
@@ -99,6 +99,30 @@ public class RulesEngine : Component
 	public virtual void OnPhaseChanged( TurnPhase previous, TurnPhase current ) { }
 
 
+	public virtual void OnStepChanged( TurnStep previous, TurnStep current ) { }
+
+
+	/// <summary>
+	///     Returns whether a conditional turn step should occur.
+	///     First-strike combat damage is skipped unless a format-specific
+	///     rules engine determines that the step is required.
+	/// </summary>
+	public virtual bool ShouldEnterStep( TurnStep step )
+	{
+		return step != TurnStep.FirstStrikeCombatDamage;
+	}
+
+
+	/// <summary>
+	///     Cleanup normally does not grant priority. Override this when
+	///     state-based actions or triggered abilities require a priority window.
+	/// </summary>
+	public virtual bool ShouldGrantCleanupPriority()
+	{
+		return false;
+	}
+
+
 	public virtual void OnAllPlayersPassedPriority() { }
 
 
@@ -115,7 +139,7 @@ public class RulesEngine : Component
 
 		GameObject  zoneObject = new GameObject( Director.GameObject, true, $"{player.DisplayName} {type}" ) { WorldPosition = pose.Position, WorldRotation = pose.Rotation };
 		ZoneObject? zone       = zoneObject.Components.Create<ZoneObject>();
-		zone.OwnerPlayerId = player.PlayerId;
+		zone.OwnerPlayerId = player.ParticipantId;
 		zone.ZoneType      = type;
 		zone.Role          = type.ToString();
 		zone.Capacity      = capacity;
@@ -155,15 +179,15 @@ public class RulesEngine : Component
 	}
 
 
-	protected CardObject CreateCard( PlayerSeat owner, Guid printingId )
+	public CardObject CreateCard( PlayerSeat owner, Guid printingId )
 	{
 		if ( !Networking.IsHost )
 			throw new InvalidOperationException( "Only the host can create match cards." );
 
 		GameObject  cardObject = new GameObject( Director.GameObject, true, "MTG Card" );
 		CardObject? card       = cardObject.Components.Create<CardObject>();
-		card.OwnerPlayerId      = owner.PlayerId;
-		card.ControllerPlayerId = owner.PlayerId;
+		card.OwnerPlayerId      = owner.ParticipantId;
+		card.ControllerPlayerId = owner.ParticipantId;
 		card.SetCard( printingId );
 
 		if ( Networking.IsActive )
