@@ -1,0 +1,213 @@
+@using Sandbox
+@using Sandbox.UI
+@using Sandbox.Framework.GameInfo
+@using Sandbox.Framework.Rules
+@using System
+
+@inherits PanelComponent
+@namespace Sandbox.Framework.UI
+
+<root class="@RootClass()">
+	@if ( Match is { State: GameState.Playing } )
+	{
+		<div class="turn-card">
+			<div class="turn-header">
+				<div class="turn-count">TURN @Match.TurnNumber</div>
+				<div class="turn-owner @(IsLocalActive ? "you" : string.Empty)">@TurnOwnerText</div>
+			</div>
+
+			<div class="phase-track">
+				@foreach ( TurnPhase phase in TurnPhases )
+				{
+					<div class="phase @(PhaseClass( phase ))">
+						<div class="phase-dot"></div>
+						<div class="phase-name">@PhaseLabel( phase )</div>
+					</div>
+				}
+			</div>
+
+			<div class="current-step">
+				<div class="step-label">CURRENT STEP</div>
+				<div class="step-name">@StepLabel( Match.Step )</div>
+			</div>
+
+			<div class="priority-row @(IsLocalPriority ? "local-priority" : string.Empty)">
+				<div class="priority-icon">bolt</div>
+				<div class="priority-copy">
+					<div class="priority-label">PRIORITY</div>
+					<div class="priority-player">@PriorityText</div>
+				</div>
+				@if ( Match.StackCount > 0 )
+				{
+					<div class="stack-count">@Match.StackCount on stack</div>
+				}
+			</div>
+
+			@if ( LocalSeat?.ActionError is { Length: > 0 } error )
+			{
+				<div class="action-error">@error</div>
+			}
+
+			<div class="turn-actions">
+				<button class="advance-button @(CanUsePrimaryAction ? string.Empty : "disabled")" onclick="@UsePrimaryAction">
+					<span>@PrimaryActionLabel</span>
+					<div class="button-icon">arrow_forward</div>
+				</button>
+
+				@if ( IsLocalActive && Match.Phase != TurnPhase.Ending )
+				{
+					<button class="end-turn-button" onclick="@EndTurn">End Turn</button>
+				}
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	private static readonly TurnPhase[] TurnPhases =
+	[
+		TurnPhase.Beginning,
+		TurnPhase.PrecombatMain,
+		TurnPhase.Combat,
+		TurnPhase.PostcombatMain,
+		TurnPhase.Ending
+	];
+
+	private Match Match => Scene.Get<GameDirector>()?.ActiveMatch;
+	private Seat LocalSeat => Match?.Seats.FirstOrDefault( seat => seat.IsLocal );
+	private Seat ActiveSeat => SeatFor( Match?.ActivePlayerId ?? Guid.Empty );
+	private Seat PrioritySeat => SeatFor( Match?.PriorityPlayerId ?? Guid.Empty );
+	private bool IsLocalActive => LocalSeat is not null && Match?.ActivePlayerId == LocalSeat.Player;
+	private bool IsLocalPriority => LocalSeat is not null && Match?.PriorityPlayerId == LocalSeat.Player;
+	private bool CanUsePrimaryAction => Match is { State: GameState.Playing } &&
+	                                    (IsLocalPriority || IsLocalActive && Match.Phase == TurnPhase.Ending);
+	private string ActivePlayerName => PlayerName( ActiveSeat, "No active player" );
+	private string TurnOwnerText => IsLocalActive ? "Your turn" : $"{ActivePlayerName}'s turn";
+	private string PriorityText => Match?.PriorityPlayerId == Guid.Empty
+		? "Resolving game actions"
+		: IsLocalPriority ? "You have priority" : $"{PlayerName( PrioritySeat, "Another player" )} has priority";
+	private string PrimaryActionLabel => IsLocalActive && Match?.Phase == TurnPhase.Ending
+		? "End Turn"
+		: IsLocalPriority
+			? IsLocalActive ? "Pass Priority · Advance" : "Pass Priority"
+			: IsLocalActive ? "Waiting for Priority" : $"Waiting for {ActivePlayerName}";
+
+
+	private void UsePrimaryAction()
+	{
+		if ( !CanUsePrimaryAction || Match is null )
+			return;
+
+		if ( IsLocalActive && Match.Phase == TurnPhase.Ending )
+			Match.EndTurn();
+		else
+			Match.PassPriority();
+	}
+
+
+	private void EndTurn()
+	{
+		if ( IsLocalActive )
+			Match?.EndTurn();
+	}
+
+
+	private Seat SeatFor( Guid playerId )
+	{
+		return playerId == Guid.Empty ? null : Match?.Seats.FirstOrDefault( seat => seat.Player == playerId );
+	}
+
+
+	private static string PlayerName( Seat seat, string fallback )
+	{
+		if ( seat is null )
+			return fallback;
+
+		return seat.IsLocal ? "You" : seat.PlayerName;
+	}
+
+
+	private string PhaseClass( TurnPhase phase )
+	{
+		if ( Match is null )
+			return string.Empty;
+
+		if ( phase == Match.Phase )
+			return "active";
+
+		return phase < Match.Phase ? "complete" : string.Empty;
+	}
+
+
+	private static string PhaseLabel( TurnPhase phase )
+	{
+		return phase switch
+		{
+			TurnPhase.Beginning => "Begin",
+			TurnPhase.PrecombatMain => "Main 1",
+			TurnPhase.Combat => "Combat",
+			TurnPhase.PostcombatMain => "Main 2",
+			TurnPhase.Ending => "End",
+			_ => phase.ToString()
+		};
+	}
+
+
+	private static string StepLabel( TurnStep step )
+	{
+		return step switch
+		{
+			TurnStep.PrecombatMain => "Precombat Main",
+			TurnStep.BeginningOfCombat => "Beginning of Combat",
+			TurnStep.DeclareAttackers => "Declare Attackers",
+			TurnStep.DeclareBlockers => "Declare Blockers",
+			TurnStep.FirstStrikeCombatDamage => "First-Strike Damage",
+			TurnStep.CombatDamage => "Combat Damage",
+			TurnStep.EndOfCombat => "End of Combat",
+			TurnStep.PostcombatMain => "Postcombat Main",
+			_ => SplitWords( step.ToString() )
+		};
+	}
+
+
+	private static string SplitWords( string value )
+	{
+		return System.Text.RegularExpressions.Regex.Replace( value, "([a-z])([A-Z])", "$1 $2" );
+	}
+
+
+	private string RootClass()
+	{
+		return Match is { State: GameState.Playing } ? "visible" : string.Empty;
+	}
+
+
+	protected override int BuildHash()
+	{
+		HashCode hash = new();
+		hash.Add( Match?.State );
+		hash.Add( Match?.TurnNumber );
+		hash.Add( Match?.Phase );
+		hash.Add( Match?.Step );
+		hash.Add( Match?.ActivePlayerId );
+		hash.Add( Match?.PriorityPlayerId );
+		hash.Add( Match?.ConsecutivePasses );
+		hash.Add( Match?.StackCount );
+		hash.Add( Match?.HasPendingChoice );
+		hash.Add( LocalSeat?.ActionError );
+
+		if ( Match is not null )
+		{
+			foreach ( Seat seat in Match.Seats )
+			{
+				hash.Add( seat.Player );
+				hash.Add( seat.PlayerName );
+				hash.Add( seat.IsConnected );
+				hash.Add( seat.Eliminated );
+			}
+		}
+
+		return hash.ToHashCode();
+	}
+}

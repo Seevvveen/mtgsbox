@@ -1,0 +1,321 @@
+@using Sandbox
+@using Sandbox.UI
+@using System
+@using Sandbox.Classes.Deck
+@using Sandbox.Classes.Deck.Import
+@using Sandbox.Classes.Database
+@using Sandbox.Framework
+@using Sandbox.Framework.GameInfo
+
+@inherits PanelComponent
+@namespace Sandbox.Framework.UI
+
+<root class="@RootClass()">
+	@if ( Match is null )
+	{
+		<div class="menu-card">
+			<div class="eyebrow">MULTIPLAYER TABLETOP</div>
+			<div class="game-title">Magic: The Gathering</div>
+			<div class="game-subtitle">Bring a deck, gather your players, and take a seat.</div>
+
+			<div class="format-section">
+				<div class="format-label">CHOOSE A FORMAT</div>
+
+				<div class="format-options">
+					@foreach ( MTGFormat format in AvailableFormats )
+					{
+						<button class="format-option @(IsSelected( format ) ? "selected" : string.Empty)"
+							onclick="@(() => SelectFormat( format ))">
+							<div class="format-option-top">
+								<div class="format-name">@format.DisplayName</div>
+								<div class="selection-mark">@(IsSelected( format ) ? "check_circle" : "radio_button_unchecked")</div>
+							</div>
+							<div class="format-code">@format.FormatCode</div>
+							<div class="format-details">@FormatSummary( format )</div>
+						</button>
+					}
+
+					@if ( AvailableFormats.Count == 0 )
+					{
+						<div class="no-formats">No MTG format assets were found.</div>
+					}
+				</div>
+			</div>
+
+			@if ( MenuMessage.Length > 0 )
+			{
+				<div class="menu-message">@MenuMessage</div>
+			}
+
+			@if ( Networking.IsHost )
+			{
+				<button class="primary start-button @(Director?.FormatFile is null ? "disabled" : string.Empty)" onclick="@StartLobby">Start</button>
+			}
+			else
+			{
+				<div class="waiting-host">Waiting for the host to open the lobby…</div>
+			}
+		</div>
+	}
+	else if ( Match.State == GameState.Lobby )
+	{
+		<div class="lobby-shell">
+			<div class="lobby-header">
+				<div>
+					<div class="eyebrow">MATCH LOBBY</div>
+					<div class="lobby-title">@(Director?.LobbyName ?? "Magic: The Gathering")</div>
+					<div class="lobby-subtitle">@Match.StatusText</div>
+				</div>
+				<div class="player-count">@Match.Seats.Count / @(Director?.FormatFile?.MaximumPlayers ?? 0) players</div>
+			</div>
+
+			<div class="lobby-content">
+				<div class="players-panel">
+					<div class="panel-heading">Players</div>
+
+					@foreach ( Seat seat in Match.Seats )
+					{
+						<div class="player-row @(seat.IsLocal ? "local" : string.Empty)">
+							<div class="seat-number">@(seat.Index + 1)</div>
+							<div class="player-info">
+								<div class="player-name">@seat.PlayerName @(seat.IsLocal ? "(You)" : string.Empty)</div>
+								<div class="deck-summary">@(seat.HasSubmittedDeck ? $"{seat.DeckName} · {seat.DeckCardCount} cards" : "No deck submitted")</div>
+							</div>
+							<div class="deck-badge @(seat.HasSubmittedDeck ? "complete" : string.Empty)">@(seat.HasSubmittedDeck ? "Deck ✓" : "Deck —")</div>
+							<div class="ready-badge @(seat.Ready ? "complete" : string.Empty)">@(seat.Ready ? "Ready" : "Not ready")</div>
+						</div>
+					}
+
+					@for ( int index = Match.Seats.Count; index < (Director?.FormatFile?.MinimumPlayers ?? 2); index++ )
+					{
+						<div class="player-row empty">
+							<div class="seat-number">@(index + 1)</div>
+							<div class="player-info">
+								<div class="player-name">Open seat</div>
+								<div class="deck-summary">Waiting for another connection</div>
+							</div>
+						</div>
+					}
+				</div>
+
+				<div class="deck-panel">
+					<div class="panel-heading">Your deck</div>
+					<div class="panel-copy">Paste a plain-text deck list. Submitting a replacement deck will mark you not ready.</div>
+
+					<TextEntry class="deck-input"
+						Value:bind="@DeckText"
+						Placeholder="4 Lightning Bolt&#10;4 Mountain&#10;…"
+						Multiline="@true" />
+
+					@if ( ImportIssues.Count > 0 || LocalSeat?.DeckError is { Length: > 0 } || Database?.FailureReason is { Length: > 0 } )
+					{
+						<div class="issues">
+							@foreach ( string issue in ImportIssues )
+							{
+								<div class="issue">@issue</div>
+							}
+
+							@if ( LocalSeat?.DeckError is { Length: > 0 } error )
+							{
+								<div class="issue server-error">@error</div>
+							}
+
+							@if ( Database?.FailureReason is { Length: > 0 } databaseError )
+							{
+								<div class="issue server-error">@databaseError</div>
+							}
+						</div>
+					}
+
+					<div class="deck-actions">
+						<button class="secondary @(DatabaseCompatible ? string.Empty : "disabled")" onclick="@SubmitDeck">@(LocalSeat?.HasSubmittedDeck == true ? "Replace deck" : "Submit deck")</button>
+						<button class="primary ready-button @(CanRequestReady ? string.Empty : "disabled")" onclick="@ToggleReady">
+							@(LocalSeat?.Ready == true ? "Cancel ready" : "Ready up")
+						</button>
+					</div>
+				</div>
+			</div>
+
+			<div class="lobby-footer">
+				<div class="privacy"><span class="status-dot"></span> Public lobby · Players can join through s&amp;box</div>
+				<div class="auto-start">The match starts automatically when every player is ready.</div>
+			</div>
+		</div>
+	}
+</root>
+
+@code
+{
+	private string DeckText { get; set; } = string.Empty;
+	private List<string> ImportIssues { get; set; } = [ ];
+	private string MenuMessage { get; set; } = string.Empty;
+	private bool DeckSubmissionPending { get; set; }
+
+	private GameDirector Director => Scene.Get<GameDirector>();
+	private DatabaseManager Database => Scene.Get<DatabaseManager>();
+	private Match Match => Director?.ActiveMatch;
+	private Seat LocalSeat => Match?.Seats.FirstOrDefault( seat => seat.IsLocal );
+	private bool DatabaseCompatible => Database?.IsReady == true && Match is not null &&
+	                                   (string.IsNullOrWhiteSpace( Match.RequiredDatabaseChecksum )
+		                                   ? Networking.IsHost
+		                                   : string.Equals( Database.DatabaseChecksum, Match.RequiredDatabaseChecksum, StringComparison.Ordinal ));
+	private bool CanRequestReady => DatabaseCompatible &&
+	                                (LocalSeat?.HasSubmittedDeck == true ||
+	                                 (DeckSubmissionPending && LocalSeat?.DeckError is not { Length: > 0 }));
+	private IReadOnlyList<MTGFormat> AvailableFormats
+	{
+		get
+		{
+			List<MTGFormat> formats = ResourceLibrary.GetAll<MTGFormat>()
+				.OrderBy( format => format.DisplayName )
+				.ToList();
+
+			if ( Director?.FormatFile is { } selected && !formats.Contains( selected ) )
+				formats.Add( selected );
+
+			return formats;
+		}
+	}
+
+
+	protected override void OnTreeFirstBuilt()
+	{
+		base.OnTreeFirstBuilt();
+		Mouse.Visibility = MouseVisibility.Visible;
+	}
+
+
+	private void StartLobby()
+	{
+		if ( Director?.FormatFile is null )
+		{
+			MenuMessage = "Select a format before starting.";
+			return;
+		}
+
+		MenuMessage = string.Empty;
+		Director.StartLobby();
+	}
+
+
+	private void SelectFormat( MTGFormat format )
+	{
+		if ( !Networking.IsHost || Match is not null )
+			return;
+
+		Director.FormatFile = format;
+		MenuMessage = string.Empty;
+	}
+
+
+	private bool IsSelected( MTGFormat format )
+	{
+		return format == Director?.FormatFile;
+	}
+
+
+	private void SubmitDeck()
+	{
+		ImportIssues = [ ];
+
+		if ( !DatabaseCompatible )
+		{
+			ImportIssues.Add( Database?.FailureReason ?? Database?.StatusMessage ?? "Waiting for the card database to match the host." );
+			return;
+		}
+
+		if ( Match is null || string.IsNullOrWhiteSpace( DeckText ) )
+		{
+			ImportIssues.Add( "Paste a deck list before submitting." );
+			return;
+		}
+
+		try
+		{
+			DeckImportResult result = new PlainTextDeckParser().Import(
+				DeckText,
+				new DeckImportOptions
+				{
+					DeckName = "Imported Deck",
+					FormatCode = Director?.FormatFile?.FormatCode
+				}
+			);
+
+			ImportIssues = result.Issues.Select( issue => issue.Message ).ToList();
+
+			if ( result.HasErrors )
+				return;
+
+			Match.SubmitDeck( DeckJson.Serialize( result.Deck ) );
+			DeckSubmissionPending = true;
+		}
+		catch ( Exception exception )
+		{
+			ImportIssues.Add( exception.Message );
+		}
+	}
+
+
+	private void ToggleReady()
+	{
+		if ( Match is null || !DatabaseCompatible )
+			return;
+
+		// The host is authoritative for deck acceptance. Do not reject the click
+		// using a synchronized client value that may still be one update behind a
+		// preceding SubmitDeck RPC; reliable RPC ordering lets the host validate
+		// the submitted deck before processing this ready request.
+		Match.SetReady( LocalSeat?.Ready != true );
+	}
+
+
+	private string FormatSummary( MTGFormat format )
+	{
+		return $"{format.MinimumPlayers}–{format.MaximumPlayers} players · {format.DeckSize}+ cards · {format.StartingLife} life";
+	}
+
+
+	private string RootClass()
+	{
+		return Match is { State: not GameState.Lobby } ? "in-match" : string.Empty;
+	}
+
+
+	protected override int BuildHash()
+	{
+		HashCode hash = new();
+		hash.Add( DeckText );
+		hash.Add( Director?.FormatFile );
+		hash.Add( MenuMessage );
+		hash.Add( DeckSubmissionPending );
+		hash.Add( Match?.State );
+		hash.Add( Match?.LobbyRevision );
+		hash.Add( Match?.StatusText );
+		hash.Add( Match?.RequiredDatabaseChecksum );
+		hash.Add( Database?.State );
+		hash.Add( Database?.StatusMessage );
+		hash.Add( Database?.FailureReason );
+		hash.Add( Database?.DatabaseChecksum );
+		hash.Add( LocalSeat?.DeckError );
+
+		if ( Match is not null )
+		{
+			foreach ( Seat seat in Match.Seats )
+			{
+				hash.Add( seat.Index );
+				hash.Add( seat.Player );
+				hash.Add( seat.PlayerName );
+				hash.Add( seat.HasSubmittedDeck );
+				hash.Add( seat.DeckName );
+				hash.Add( seat.DeckCardCount );
+				hash.Add( seat.Ready );
+				hash.Add( seat.DeckError );
+			}
+		}
+
+		foreach ( string issue in ImportIssues )
+			hash.Add( issue );
+
+		return hash.ToHashCode();
+	}
+}

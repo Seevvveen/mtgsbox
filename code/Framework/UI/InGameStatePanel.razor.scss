@@ -1,0 +1,245 @@
+InGameStatePanel
+{
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	padding: 32px;
+	justify-content: flex-end;
+	align-items: flex-start;
+	font-family: Poppins;
+	color: #f6f3eb;
+	pointer-events: none;
+	display: none;
+
+	&.visible
+	{
+		display: flex;
+	}
+
+	.turn-card
+	{
+		width: 390px;
+		padding: 20px;
+		flex-direction: column;
+		gap: 15px;
+		background-color: #11141aed;
+		border: 1px solid #3b404c;
+		border-radius: 14px;
+		box-shadow: 0 16px 50px #0009;
+		backdrop-filter: blur( 12px );
+		pointer-events: all;
+	}
+
+	.turn-header
+	{
+		width: 100%;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.turn-count,
+	.step-label,
+	.priority-label
+	{
+		font-size: 11px;
+		font-weight: 750;
+		letter-spacing: 1.3px;
+		color: #858b99;
+	}
+
+	.turn-owner
+	{
+		padding: 5px 10px;
+		background-color: #292e39;
+		border-radius: 16px;
+		font-size: 13px;
+		font-weight: 650;
+
+		&.you
+		{
+			background-color: #4a301d;
+			color: #f3bc70;
+		}
+	}
+
+	.phase-track
+	{
+		width: 100%;
+		justify-content: space-between;
+	}
+
+	.phase
+	{
+		min-width: 58px;
+		flex-direction: column;
+		align-items: center;
+		gap: 5px;
+		color: #737987;
+
+		.phase-dot
+		{
+			width: 8px;
+			height: 8px;
+			background-color: #3a3f49;
+			border-radius: 50%;
+		}
+
+		.phase-name
+		{
+			font-size: 10px;
+			font-weight: 650;
+		}
+
+		&.complete
+		{
+			color: #a9adba;
+
+			.phase-dot
+			{
+				background-color: #777e8d;
+			}
+		}
+
+		&.active
+		{
+			color: #f1b868;
+
+			.phase-dot
+			{
+				width: 11px;
+				height: 11px;
+				background-color: #dc8e43;
+				box-shadow: 0 0 12px #dc8e43aa;
+			}
+		}
+	}
+
+	.current-step
+	{
+		width: 100%;
+		padding: 13px 15px;
+		flex-direction: column;
+		gap: 2px;
+		background-color: #090b10;
+		border-radius: 9px;
+	}
+
+	.step-name
+	{
+		font-size: 20px;
+		font-weight: 750;
+	}
+
+	.priority-row
+	{
+		width: 100%;
+		min-height: 57px;
+		padding: 10px 12px;
+		align-items: center;
+		gap: 10px;
+		background-color: #1b1f28;
+		border: 1px solid transparent;
+		border-radius: 9px;
+
+		&.local-priority
+		{
+			background-color: #222d25;
+			border-color: #3d7652;
+		}
+	}
+
+	.priority-icon,
+	.button-icon
+	{
+		font-family: Material Icons;
+	}
+
+	.priority-icon
+	{
+		font-size: 22px;
+		color: #e0ad5e;
+	}
+
+	.priority-copy
+	{
+		flex-grow: 1;
+		flex-direction: column;
+	}
+
+	.priority-player
+	{
+		font-size: 14px;
+		font-weight: 650;
+	}
+
+	.stack-count
+	{
+		padding: 4px 7px;
+		background-color: #333947;
+		border-radius: 5px;
+		font-size: 10px;
+		color: #c6cad3;
+	}
+
+	.action-error
+	{
+		width: 100%;
+		padding: 9px 11px;
+		background-color: #442528;
+		border-radius: 7px;
+		font-size: 12px;
+		color: #ffb2b2;
+	}
+
+	.turn-actions
+	{
+		width: 100%;
+		gap: 8px;
+	}
+
+	button
+	{
+		height: 46px;
+		padding: 0 16px;
+		justify-content: center;
+		align-items: center;
+		gap: 8px;
+		border: 0;
+		border-radius: 8px;
+		font-family: Poppins;
+		font-size: 13px;
+		font-weight: 750;
+		cursor: pointer;
+
+		&:hover
+		{
+			filter: brightness( 1.12 );
+		}
+
+		&:active
+		{
+			filter: brightness( 0.9 );
+		}
+
+		&.disabled
+		{
+			opacity: 0.4;
+			cursor: default;
+		}
+	}
+
+	.advance-button
+	{
+		flex-grow: 1;
+		background-color: #c87938;
+		color: white;
+	}
+
+	.end-turn-button
+	{
+		background-color: #303541;
+		color: #e3e5e9;
+	}
+}
