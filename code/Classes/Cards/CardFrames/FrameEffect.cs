@@ -26,5 +26,6 @@ public enum FrameEffect
 	FanDfc                 = 21,
 	UpsideDownDfc          = 22,
 	Spree                  = 23,
-	Fullart                = 24
+	Fullart                = 24,
+	Unknown                = 25
 }

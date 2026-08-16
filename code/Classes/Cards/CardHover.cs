@@ -19,6 +19,7 @@ public sealed class CardHover : Component
 	private CardObject? _dropHighlight;
 
 	private CardObject? _pending;
+	private CardObject? _selected;
 
 	private           Vector2 _pressPosition;
 	[Property] public float   TraceDistance { get; set; } = 10000f;
@@ -49,6 +50,8 @@ public sealed class CardHover : Component
 
 	protected override void OnUpdate()
 	{
+		SynchronizeSelection();
+
 		CameraComponent? camera = Scene.Camera;
 
 		if ( camera is null )
@@ -87,6 +90,13 @@ public sealed class CardHover : Component
 			_pending       = Hovered;
 			_pressPosition = Mouse.Position;
 		}
+		else if ( Input.Pressed( "attack1" ) )
+		{
+			RequestSelection( null );
+		}
+
+		if ( Input.Pressed( "attack2" ) && Hovered is not null )
+			RequestTap( Hovered );
 	}
 
 
@@ -111,7 +121,7 @@ public sealed class CardHover : Component
 
 		if ( !Input.Down( "attack1" ) )
 		{
-			pending.Pulse();
+			RequestSelection( pending );
 			_pending = null;
 
 			return;
@@ -130,7 +140,16 @@ public sealed class CardHover : Component
 		if ( !card.IsValid() )
 			return;
 
-		if ( Scene.Get<GameDirector>() is null && card.GameObject.Network.IsProxy )
+		Match? match = Scene.Get<Match>();
+
+		if ( match is not null && match.PriorityPlayerId != Connection.Local.Id )
+		{
+			card.Pulse();
+
+			return;
+		}
+
+		if ( match is null && card.GameObject.Network.IsProxy )
 		{
 			card.Pulse();
 
@@ -147,7 +166,12 @@ public sealed class CardHover : Component
 		card.CancelThrow();
 		card.GameObject.Tags.Set( "dragging", true );
 		card.SetHover( 0f );
-		Scene.Get<GameDirector>()?.RequestGrabCard( card );
+
+		if ( card.GameObject.Network.IsProxy )
+			card.BeginLocalDragPreview();
+
+		if ( match is not null )
+			match.RequestGrabCard( card );
 	}
 
 
@@ -169,8 +193,15 @@ public sealed class CardHover : Component
 		_dragPosition = Vector3.Lerp( _dragPosition, target, interpolation );
 		_dragVelocity = ( _dragPosition - previous ) / MathF.Max( Time.Delta, 0.0001f );
 
-		card.WorldPosition = _dragPosition;
-		card.WorldRotation = _dragRotation;
+		Transform previewPose = new Transform( _dragPosition, _dragRotation );
+
+		if ( card.GameObject.Network.IsProxy )
+			card.UpdateLocalDragPreview( previewPose );
+		else
+		{
+			card.WorldPosition = _dragPosition;
+			card.WorldRotation = _dragRotation;
+		}
 
 		SetDropZone( ZoneUnder( ray ) );
 		card.Highlight( DropTarget is null? Color.White : new Color( 0.55f, 1f, 0.55f ), DropTarget is null? 0f : 0.55f );
@@ -196,10 +227,13 @@ public sealed class CardHover : Component
 		if ( zone is not null && zone.CanAccept( card ) )
 		{
 			Transform     dropPose = DropPose( zone, ray, card );
-			GameDirector? director = Scene.Get<GameDirector>();
+			Match? match = Scene.Get<Match>();
 
-			if ( director is not null )
-				director.RequestMoveCard( card, zone.ZoneId, dropPose );
+			if ( card.GameObject.Network.IsProxy )
+				card.UpdateLocalDragPreview( dropPose );
+
+			if ( match is not null )
+				match.RequestMoveCard( card, zone.ZoneId, dropPose );
 			else
 				card.PlaceInZone( zone.ZoneId, dropPose );
 		}
@@ -207,17 +241,21 @@ public sealed class CardHover : Component
 		{
 			Vector3       planarVelocity = _dragVelocity.WithZ( 0f )                   * ThrowVelocityScale;
 			Vector3       spin           = Vector3.Cross( Vector3.Up, planarVelocity ) * ThrowSpinScale;
-			GameDirector? director       = Scene.Get<GameDirector>();
+			Match? match = Scene.Get<Match>();
 
-			if ( director is not null )
-				director.RequestThrowCard( card, planarVelocity, spin );
+			if ( match is not null )
+				match.RequestThrowCard( card, planarVelocity, spin );
 			else
 				card.Throw( planarVelocity, spin );
 		}
 		else
 		{
-			Scene.Get<GameDirector>()?.ReleaseGrab( card );
-			card.MoveTo( _dragOrigin );
+			Match? match = Scene.Get<Match>();
+
+			if ( match is not null )
+				match.ReleaseGrab( card );
+			else
+				card.MoveTo( _dragOrigin );
 		}
 
 		ClearDragState();
@@ -231,7 +269,7 @@ public sealed class CardHover : Component
 
 		Vector3 normal     = zone.WorldRotation.Up;
 		Vector3 planePoint = zone.WorldPosition + normal * zone.BaseLift;
-		Vector3 position   = new Plane( planePoint, normal ).Trace( ray ) ?? card.WorldPosition;
+		Vector3 position   = new Plane( planePoint, normal ).Trace( ray ) ?? _dragPosition;
 
 		return new Transform( position, zone.WorldRotation );
 	}
@@ -281,7 +319,34 @@ public sealed class CardHover : Component
 				return zone;
 		}
 
-		return null;
+		ZoneObject? smallestZone = null;
+		float       smallestArea = float.MaxValue;
+
+		foreach ( ZoneObject zone in Scene.GetAllComponents<ZoneObject>() )
+		{
+			Vector3 normal = zone.WorldRotation.Up;
+			Vector3? point = new Plane( zone.WorldPosition, normal ).Trace( ray );
+
+			if ( point is not Vector3 intersection )
+				continue;
+
+			Vector3 delta = intersection - zone.WorldPosition;
+			Vector2 size  = zone.ActiveSize;
+
+			if ( MathF.Abs( Vector3.Dot( delta, zone.WorldRotation.Forward ) ) > size.x * 0.5f ||
+				 MathF.Abs( Vector3.Dot( delta, zone.WorldRotation.Right ) ) > size.y * 0.5f )
+				continue;
+
+			float area = size.x * size.y;
+
+			if ( area >= smallestArea )
+				continue;
+
+			smallestZone = zone;
+			smallestArea = area;
+		}
+
+		return smallestZone;
 	}
 
 
@@ -299,6 +364,57 @@ public sealed class CardHover : Component
 	}
 
 
+	private void RequestSelection( CardObject? card )
+	{
+		if ( !card.IsValid() )
+			card = null;
+
+		Match? match = Scene.Get<Match>();
+
+		if ( match is not null )
+			match.RequestSelectCard( card );
+		else
+			ApplySelection( card );
+	}
+
+
+	private void SynchronizeSelection()
+	{
+		Seat? localSeat = Scene.GetAllComponents<Seat>().FirstOrDefault( seat => seat.IsLocal );
+		ApplySelection( localSeat?.SelectedCard );
+	}
+
+
+	private void ApplySelection( CardObject? card )
+	{
+		if ( !card.IsValid() )
+			card = null;
+
+		if ( ReferenceEquals( card, _selected ) )
+			return;
+
+		_selected?.SetGlow( false );
+		_selected = card;
+		_selected?.SetGlow( true );
+	}
+
+
+	private void RequestTap( CardObject card )
+	{
+		Match? match = Scene.Get<Match>();
+
+		if ( match is not null )
+		{
+			if ( match.PriorityPlayerId == Connection.Local.Id )
+				match.RequestTapCard( card );
+			else
+				card.Pulse();
+		}
+		else if ( !card.GameObject.Network.IsProxy )
+			card.SetTapped( !card.Tapped );
+	}
+
+
 	private void SetDropZone( ZoneObject? zone )
 	{
 		if ( ReferenceEquals( zone, DropTarget ) )
@@ -308,7 +424,9 @@ public sealed class CardHover : Component
 		_dropHighlight = null;
 		DropTarget     = zone;
 
-		if ( zone?.TopCard is CardObject top && !ReferenceEquals( top, Dragged ) )
+		CardObject? top = zone is not null && zone.Cards.Count > 0? zone.Cards[^1] : null;
+
+		if ( top is not null && !ReferenceEquals( top, Dragged ) )
 		{
 			_dropHighlight = top;
 			top.SetHover( 1f );
@@ -320,11 +438,16 @@ public sealed class CardHover : Component
 	{
 		_pending = null;
 		SetHovered( null );
+		RequestSelection( null );
 
 		if ( Dragged.IsValid() )
 		{
-			Scene.Get<GameDirector>()?.ReleaseGrab( Dragged );
-			Dragged.MoveTo( _dragOrigin );
+			Match? match = Scene.Get<Match>();
+
+			if ( match is not null )
+				match.ReleaseGrab( Dragged );
+			else
+				Dragged.MoveTo( _dragOrigin );
 		}
 
 		ClearDragState();
@@ -335,6 +458,7 @@ public sealed class CardHover : Component
 	{
 		if ( Dragged.IsValid() )
 		{
+			Dragged.ReleaseLocalDragPreview();
 			Dragged.GameObject.Tags.Set( "dragging", false );
 			Dragged.ClearHighlight();
 		}

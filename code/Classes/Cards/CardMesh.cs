@@ -41,16 +41,6 @@ public static class CardMesh
 		get { return Width * ThicknessRatio; }
 	}
 
-	private static float CornerRadius
-	{
-		get { return Width * 0.08f; }
-	}
-
-	private static float HalfThickness
-	{
-		get { return Thickness * 0.5f; }
-	}
-
 	public static Model Shared
 	{
 		get { return _shared ??= Build(); }
@@ -99,11 +89,26 @@ public static class CardMesh
 
 	private static Model Build()
 	{
+		return CreateModel( Width, Height, Thickness );
+	}
+
+
+	/// <summary>
+	///     Creates an independent card-shaped model at the requested dimensions.
+	///     Zone markers use this without changing the shared gameplay card size.
+	/// </summary>
+	public static Model CreateModel( float width, float height, float thickness )
+	{
+		width     = MathF.Max( width, 0.1f );
+		height    = MathF.Max( height, 0.1f );
+		thickness = MathF.Max( thickness, 0.01f );
+
 		Material placeholder = CardMaterialFactory.Create( "mtgsbox_card_placeholder", Texture.White, false );
 		Mesh     mesh        = new Mesh( placeholder );
 
-		float         hw      = Width / 2f, hh = Height / 2f;
-		float         r       = MathF.Min( CornerRadius, MathF.Min( hw, hh ) );
+		float         hw      = width / 2f, hh = height / 2f;
+		float         r       = MathF.Min( width * 0.08f, MathF.Min( hw, hh ) );
+		float         halfThickness = thickness * 0.5f;
 		List<Vector2> outline = RoundedRectOutline( hw, hh, r );
 
 		List<Vertex> verts   = new List<Vertex>();
@@ -113,7 +118,7 @@ public static class CardMesh
 			   verts,
 			   indices,
 			   outline,
-			   HalfThickness,
+			   halfThickness,
 			   Vector3.Up,
 			   new Vector3( 1, 0, 0 ),
 			   true,
@@ -125,7 +130,7 @@ public static class CardMesh
 			   verts,
 			   indices,
 			   outline,
-			   -HalfThickness,
+			   -halfThickness,
 			   Vector3.Down,
 			   new Vector3( -1, 0, 0 ),
 			   false,
@@ -133,11 +138,11 @@ public static class CardMesh
 			   hh
 			  );
 
-		AddRim( verts, indices, outline, HalfThickness, EdgeBevel );
+		AddRim( verts, indices, outline, halfThickness, EdgeBevel );
 
 		mesh.CreateVertexBuffer( verts.Count, verts );
 		mesh.CreateIndexBuffer( indices.Count, indices );
-		mesh.Bounds = BBox.FromPositionAndSize( Vector3.Zero, new Vector3( Width, Height, Thickness ) );
+		mesh.Bounds = BBox.FromPositionAndSize( Vector3.Zero, new Vector3( width, height, thickness ) );
 
 		return Model.Builder.AddMesh( mesh ).Create();
 	}

@@ -2,6 +2,7 @@
 
 using System;
 using System.IO;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -41,6 +42,40 @@ public sealed class Scryfall
 	}
 
 
+	public DatabaseSourceSnapshot ReadLocalBulkMetadata( string bulkType )
+	{
+		string metadataFile = bulkType switch
+		{
+			"default-cards" => CardMetaFile,
+			"rulings"       => RulingsMetaFile,
+			_               => throw new ArgumentOutOfRangeException( nameof(bulkType), bulkType, "Unknown Scryfall bulk type." )
+		};
+
+		return ReadMetadata( metadataFile, bulkType );
+	}
+
+
+	public async Task DownloadDefaultCardsSnapshot( DatabaseSourceSnapshot snapshot, CancellationToken cancellationToken = default(CancellationToken) )
+	{
+		if ( !string.Equals( snapshot.BulkType, "default-cards", StringComparison.Ordinal ) )
+			throw new InvalidDataException( $"Expected a default-cards snapshot, received '{snapshot.BulkType}'." );
+
+		Uri uri = ValidateDownloadUri( snapshot.DownloadUri, snapshot.BulkType );
+		byte[] data = await Http.RequestBytesAsync( uri.ToString(), "GET", null, CreateHeaders(), cancellationToken );
+
+		if ( snapshot.CompressedSize > 0 && data.LongLength != snapshot.CompressedSize )
+			throw new InvalidDataException( $"Host card source was {data.LongLength} bytes; expected {snapshot.CompressedSize}." );
+
+		string checksum = Convert.ToHexString( SHA256.HashData( data ) );
+
+		if ( !string.IsNullOrWhiteSpace( snapshot.SourceChecksum ) && !string.Equals( checksum, snapshot.SourceChecksum, StringComparison.Ordinal ) )
+			throw new InvalidDataException( $"Host card source checksum mismatch. Expected {snapshot.SourceChecksum}; downloaded {checksum}." );
+
+		WriteDataFile( DatabaseFileInfo.SourceFile, data );
+		SaveMetadata( CardMetaFile, snapshot with { CompressedSize = data.LongLength, SourceChecksum = checksum } );
+	}
+
+
 	private static async Task UpdateBulkFile( string bulkType, string destinationFile, string metadataFile, CancellationToken cancellationToken, bool force )
 	{
 		Dictionary<string, string> headers = CreateHeaders();
@@ -63,11 +98,22 @@ public sealed class Scryfall
 			throw new InvalidDataException( $"Scryfall bulk type '{bulkType}' has invalid compressed " + $"size {response.CompressedSize}." );
 
 		Uri downloadUri = ValidateDownloadUri( response.JsonlDownloadUri, bulkType );
+		DatabaseSourceSnapshot snapshot = new DatabaseSourceSnapshot
+		{
+			BulkType = bulkType,
+			UpdatedAt = response.UpdatedAt,
+			DownloadUri = downloadUri.ToString(),
+			CompressedSize = response.CompressedSize
+		};
 
 		DateTimeOffset? localUpdated = GetLocalUpdatedAt( metadataFile );
 
 		if ( !force && localUpdated.HasValue && localUpdated.Value >= response.UpdatedAt && FileSystem.Data.FileExists( destinationFile ) && FileSystem.Data.FileSize( destinationFile ) == response.CompressedSize )
+		{
+			DatabaseSourceSnapshot existing = ReadMetadata( metadataFile, bulkType );
+			SaveMetadata( metadataFile, snapshot with { SourceChecksum = existing.SourceChecksum } );
 			return;
+		}
 
 		byte[] data = await Http.RequestBytesAsync( downloadUri.ToString(), "GET", null, headers, cancellationToken );
 
@@ -78,7 +124,7 @@ public sealed class Scryfall
 			throw new InvalidDataException( $"Scryfall bulk type '{bulkType}' claims gzip encoding " + "but does not have a gzip header." );
 
 		WriteDataFile( destinationFile, data );
-		SaveLocalUpdatedAt( metadataFile, response.UpdatedAt );
+		SaveMetadata( metadataFile, snapshot with { SourceChecksum = Convert.ToHexString( SHA256.HashData( data ) ) } );
 	}
 
 
@@ -96,15 +142,37 @@ public sealed class Scryfall
 		if ( !FileSystem.Data.FileExists( metadataFile ) )
 			return null;
 
-		string text = FileSystem.Data.ReadAllText( metadataFile );
-
-		return DateTimeOffset.TryParse( text, out DateTimeOffset result )? result : null;
+		return ReadMetadata( metadataFile, string.Empty ).UpdatedAt;
 	}
 
 
-	private static void SaveLocalUpdatedAt( string metadataFile, DateTimeOffset time )
+	private static DatabaseSourceSnapshot ReadMetadata( string metadataFile, string bulkType )
 	{
-		FileSystem.Data.WriteAllText( metadataFile, time.ToString( "O" ) );
+		if ( !FileSystem.Data.FileExists( metadataFile ) )
+			return new DatabaseSourceSnapshot { BulkType = bulkType };
+
+		string text = FileSystem.Data.ReadAllText( metadataFile );
+
+		try
+		{
+			DatabaseSourceSnapshot? metadata = JsonSerializer.Deserialize<DatabaseSourceSnapshot>( text, DatabaseFileInfo.DatabaseJsonOptions );
+			if ( metadata is not null )
+				return metadata;
+		}
+		catch ( JsonException )
+		{
+			// Versions before v7 stored only the timestamp as plain text.
+		}
+
+		return DateTimeOffset.TryParse( text, out DateTimeOffset updatedAt )
+			? new DatabaseSourceSnapshot { BulkType = bulkType, UpdatedAt = updatedAt }
+			: new DatabaseSourceSnapshot { BulkType = bulkType };
+	}
+
+
+	private static void SaveMetadata( string metadataFile, DatabaseSourceSnapshot metadata )
+	{
+		FileSystem.Data.WriteAllText( metadataFile, JsonSerializer.Serialize( metadata, DatabaseFileInfo.DatabaseJsonOptions ) );
 	}
 
 
@@ -168,11 +236,11 @@ public sealed class Scryfall
 
 	private sealed class BulkDataDto
 	{
-		[JsonPropertyName( "object" )] public string Object { get; } = "";
+		[JsonPropertyName( "object" )] public string Object { get; set; } = "";
 
 		[JsonPropertyName( "id" )] public string Id { get; set; } = "";
 
-		[JsonPropertyName( "type" )] public string Type { get; } = "";
+		[JsonPropertyName( "type" )] public string Type { get; set; } = "";
 
 		[JsonPropertyName( "updated_at" )] public DateTimeOffset UpdatedAt { get; set; }
 
@@ -182,7 +250,7 @@ public sealed class Scryfall
 
 		[JsonPropertyName( "compressed_size" )] public long CompressedSize { get; set; }
 
-		[JsonPropertyName( "jsonl_download_uri" )] public string JsonlDownloadUri { get; } = "";
+		[JsonPropertyName( "jsonl_download_uri" )] public string JsonlDownloadUri { get; set; } = "";
 
 		[JsonPropertyName( "content_type" )] public string? ContentType { get; set; }
 

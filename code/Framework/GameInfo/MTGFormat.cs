@@ -4,10 +4,10 @@ using Sandbox.Classes.Cards;
 namespace Sandbox.Framework.GameInfo;
 
 /// <summary>
-///     Asset metadata shared by an MTG rules prefab and its lobby.
+///     Represents format specifications and locations of prefabs
 /// </summary>
-[AssetType( Name = "MTG Game Format", Extension = "format", Category = "MTG" )]
-public sealed class GameFormat : GameResource
+[AssetType( Name = "MTG Format", Extension = "format", Category = "MTG" )]
+public sealed class MTGFormat : GameResource
 {
 	[Property] public string DisplayName    { get; set; } = "Magic";
 	[Property] public string FormatCode     { get; set; } = "standard";
@@ -16,7 +16,7 @@ public sealed class GameFormat : GameResource
 	[Property] public byte   MaximumPlayers { get; set; } = 8;
 	[Property] public int    StartingLife   { get; set; } = 40;
 	[Property] public float  TurnTimeLimit  { get; set; }
-	public override void ConfigurePublishing( ResourcePublishContext context )
-	{
-	}
+	[Property] public List<string> RequiredRuleModules { get; set; } = [ ];
+
+	[Property] public PrefabFile? Prefab { get; set; }
 }

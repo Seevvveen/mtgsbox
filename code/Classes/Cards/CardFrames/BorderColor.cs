@@ -7,5 +7,6 @@ public enum BorderColor
 	Borderless = 2,
 	Silver     = 3,
 	Yellow     = 4,
-	Gold       = 5
+	Gold       = 5,
+	Unknown    = 6
 }

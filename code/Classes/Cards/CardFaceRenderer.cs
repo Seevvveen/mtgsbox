@@ -76,7 +76,7 @@ public static class CardFaceRenderer
 	///     Builds or retrieves render resources for one exact printing.
 	///     Double-faced cards use their supplied second face as the physical back.
 	/// </summary>
-	public static Task<CardTextures> BuildCardAsync( NormalizedCard card, bool concealed = false )
+	public static Task<CardTextures> BuildCardAsync( NormalizedCard card, bool concealed = false, bool privateView = false )
 	{
 		ArgumentNullException.ThrowIfNull( card );
 
@@ -86,14 +86,14 @@ public static class CardFaceRenderer
 		string? frontUrl       = GetImageUrl( card.Gameplay.Faces[0].Images ) ?? GetImageUrl( card.Presentation.Images );
 		string? printedBackUrl = GetPrintedBackUrl( card );
 		string  backUrl        = printedBackUrl ?? StandardBackImageUrl;
-		string  key            = $"{card.Gameplay.ScryfallId:N}|{frontUrl}|{backUrl}|" + $"{concealed}";
+		string  key            = $"{card.Gameplay.ScryfallId:N}|{frontUrl}|{backUrl}|" + $"{concealed}|{privateView}";
 
 		lock ( CacheLock )
 		{
 			if ( Cache.TryGetValue( key, out Task<CardTextures>? cached ) )
 				return cached;
 
-			Task<CardTextures> created = BuildCardCoreAsync( card, frontUrl, printedBackUrl, concealed );
+			Task<CardTextures> created = BuildCardCoreAsync( card, frontUrl, printedBackUrl, concealed, privateView );
 			Cache.Add( key, created );
 
 			return created;
@@ -109,19 +109,22 @@ public static class CardFaceRenderer
 	}
 
 
-	private static async Task<CardTextures> BuildCardCoreAsync( NormalizedCard card, string? frontUrl, string? printedBackUrl, bool concealed )
+	private static async Task<CardTextures> BuildCardCoreAsync( NormalizedCard card, string? frontUrl, string? printedBackUrl, bool concealed,
+		bool privateView )
 	{
 		Texture                             front      = await LoadFrontAsync( frontUrl, card.Gameplay.Name );
 		(Texture Back, bool HasPrintedBack) backResult = await LoadBackAsync( printedBackUrl, card.Gameplay.Name );
 		Texture                             back       = backResult.Back;
+		Texture                             visibleFront = concealed? back : front;
 
-		Texture atlas = await CreateAtlasAsync( concealed? back : front, back );
+		Texture atlas = await CreateAtlasAsync( visibleFront, privateView? visibleFront : back );
 
-		Material material = CardMaterialFactory.Create( $"mtgsbox_card_{card.Gameplay.ScryfallId:N}_" + $"{( concealed? "concealed" : "visible" )}", atlas );
+		string visibility = concealed? "concealed" : privateView? "private" : "visible";
+		Material material = CardMaterialFactory.Create( $"mtgsbox_card_{card.Gameplay.ScryfallId:N}_{visibility}", atlas );
 
 		return new CardTextures
 			   {
-				   Front          = concealed? back : front,
+				   Front          = visibleFront,
 				   Back           = back,
 				   Atlas          = atlas,
 				   Material       = material,

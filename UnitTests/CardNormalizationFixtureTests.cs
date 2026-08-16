@@ -2,6 +2,7 @@
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Sandbox.Classes.Cards;
+using Sandbox.Classes.Cards.CardFrames;
 using Sandbox.Classes.Cards.Colors;
 using Sandbox.Classes.Cards.Legality;
 using Sandbox.Classes.Cards.ManaSymbols;
@@ -58,6 +59,15 @@ public sealed class CardNormalizationFixtureTests
 		"reversible_card"
 	];
 
+	private static readonly HashSet<string> TolerantSourceCaseIds = new HashSet<string>( StringComparer.Ordinal )
+	{
+		"unknown-layout",
+		"unknown-frame",
+		"unknown-border-color",
+		"unknown-rarity",
+		"unknown-frame-effect"
+	};
+
 	public static IEnumerable<object[]> ValidCaseIds()
 	{
 		return LoadSuite().Cases
@@ -68,8 +78,13 @@ public sealed class CardNormalizationFixtureTests
 	public static IEnumerable<object[]> InvalidCaseIds()
 	{
 		return LoadSuite().Cases
-			.Where( fixture => fixture.Kind == "invalid" )
+			.Where( fixture => fixture.Kind == "invalid" && !TolerantSourceCaseIds.Contains( fixture.Id ) )
 			.Select( fixture => new object[] { fixture.Id } );
+	}
+
+	public static IEnumerable<object[]> TolerantSourceCaseIdsData()
+	{
+		return TolerantSourceCaseIds.Select( id => new object[] { id } );
 	}
 
 	[TestMethod]
@@ -218,6 +233,42 @@ public sealed class CardNormalizationFixtureTests
 	}
 
 	[TestMethod]
+	[DynamicData( nameof(TolerantSourceCaseIdsData), DynamicDataSourceType.Method )]
+	public void UnknownProviderVocabulary_IsPreservedWithoutRejectingCatalog( string fixtureId )
+	{
+		FixtureCase fixture = GetCase( fixtureId );
+		ScryfallCardDto dto = DeserializeCard( fixture );
+		NormalizedCard normalized = ScryfallCardNormalizer.Normalize( dto );
+
+		switch ( fixtureId )
+		{
+			case "unknown-layout":
+				Assert.AreEqual( CardLayout.Unknown, normalized.Gameplay.Layout );
+				Assert.AreEqual( dto.Layout, normalized.Gameplay.LayoutCode );
+				break;
+			case "unknown-frame":
+				Assert.AreEqual( CardFrame.Unknown, normalized.Presentation.Frame );
+				Assert.AreEqual( dto.Frame, normalized.Presentation.FrameCode );
+				break;
+			case "unknown-border-color":
+				Assert.AreEqual( BorderColor.Unknown, normalized.Presentation.BorderColor );
+				Assert.AreEqual( dto.BorderColor, normalized.Presentation.BorderColorCode );
+				break;
+			case "unknown-rarity":
+				Assert.AreEqual( CardRarity.Unknown, normalized.Presentation.Rarity );
+				Assert.AreEqual( dto.Rarity, normalized.Presentation.RarityCode );
+				break;
+			case "unknown-frame-effect":
+				FrameEffect[] effects = normalized.Presentation.FrameEffects ?? throw new AssertFailedException( "Expected normalized frame effects." );
+				string[] effectCodes = normalized.Presentation.FrameEffectCodes ?? throw new AssertFailedException( "Expected raw frame-effect codes." );
+				string[] sourceEffects = dto.FrameEffects ?? throw new AssertFailedException( "Expected fixture frame effects." );
+				CollectionAssert.Contains( effects, FrameEffect.Unknown );
+				CollectionAssert.Contains( effectCodes, sourceEffects[0] );
+				break;
+		}
+	}
+
+	[TestMethod]
 	public void SymbolIdentifier_DatabaseJsonRoundTripsAsValueAndKey()
 	{
 		SymbolIdentifier identifier =
@@ -277,24 +328,27 @@ public sealed class CardNormalizationFixtureTests
 
 	[TestMethod]
 	[TestCategory( "Integration" )]
-	public void LocalOracleBulk_AllCardsNormalizeAndJsonRoundTrip()
+	public void LocalBulk_AllCardsNormalizeAndJsonRoundTrip()
 	{
-		string path = Path.Combine(
-			Environment.GetFolderPath(
-				Environment.SpecialFolder.ProgramFilesX86 ),
+		string dataRoot = Path.Combine(
+			Environment.GetFolderPath( Environment.SpecialFolder.ProgramFilesX86 ),
 			"Steam",
 			"steamapps",
 			"common",
 			"sbox",
 			"data",
-			"magikarp",
-			"mtgsbox#local",
-			"oracle-cards.json" );
+			"magikarp" );
+		string? path = new[]
+		{
+			Path.Combine( dataRoot, "mtgsbox", "default-cards.json" ),
+			Path.Combine( dataRoot, "mtgsbox#local", "default-cards.json" ),
+			Path.Combine( dataRoot, "mtgsbox#local", "oracle-cards.json" )
+		}.FirstOrDefault( File.Exists );
 
-		if ( !File.Exists( path ) )
+		if ( path is null )
 		{
 			Assert.Inconclusive(
-				$"Local Scryfall bulk file was not found at '{path}'." );
+				$"No local Scryfall card bulk file was found below '{dataRoot}'." );
 			return;
 		}
 
@@ -303,7 +357,6 @@ public sealed class CardNormalizationFixtureTests
 		using StreamReader reader = new( decoded );
 
 		var ids = new HashSet<Guid>();
-		var layouts = new HashSet<string>( StringComparer.Ordinal );
 		var count = 0;
 
 		while ( reader.ReadLine() is { } line )
@@ -324,7 +377,6 @@ public sealed class CardNormalizationFixtureTests
 				NormalizedCard normalized =
 					ScryfallCardNormalizer.Normalize( source );
 				Assert.IsTrue( ids.Add( normalized.Gameplay.ScryfallId ) );
-				layouts.Add( source.Layout );
 
 				byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(
 					normalized,
@@ -355,16 +407,6 @@ public sealed class CardNormalizationFixtureTests
 			count > 30_000,
 			$"Expected a full Oracle Cards corpus, found {count} cards." );
 
-		string[] unsupportedLayouts = layouts
-			.Except( SupportedLayouts, StringComparer.Ordinal )
-			.OrderBy( value => value, StringComparer.Ordinal )
-			.ToArray();
-
-		CollectionAssert.AreEqual(
-			Array.Empty<string>(),
-			unsupportedLayouts,
-			"The local bulk data contains layouts the normalizer " +
-			"does not recognize." );
 	}
 
 	private static void AssertSourceMapping(

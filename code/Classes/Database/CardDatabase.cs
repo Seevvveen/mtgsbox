@@ -90,13 +90,14 @@ public static class CardDatabase
 	/// </summary>
 	public static void Initialize()
 	{
-		CardIndexFile            indexFile  = ReadIndexFile();
-		CardSymbolDefinitionFile symbolFile = ReadSymbolDefinitionFile();
-		CardSetDefinitionFile    setFile    = ReadSetDefinitionFile();
-		CardRulingFile           rulingFile = ReadRulingFile();
+		DatabaseArtifactPaths    paths      = DatabaseGenerationStore.ResolveActivePaths();
+		CardIndexFile            indexFile  = ReadIndexFile( paths.CardIndex );
+		CardSymbolDefinitionFile symbolFile = ReadSymbolDefinitionFile( paths.Symbols );
+		CardSetDefinitionFile    setFile    = ReadSetDefinitionFile( paths.Sets );
+		CardRulingFile           rulingFile = ReadRulingFile( paths.Rulings );
 
-		if ( indexFile.FormatVersion < 5 )
-			throw new InvalidDataException( "The card database predates deck-import printing indexes " + "and must be rebuilt." );
+		if ( indexFile.FormatVersion < 7 )
+			throw new InvalidDataException( "The card database predates transactional, source-compatible generations and must be rebuilt." );
 
 		if ( symbolFile.FormatVersion != indexFile.FormatVersion || setFile.FormatVersion != indexFile.FormatVersion || rulingFile.FormatVersion != indexFile.FormatVersion )
 			throw new InvalidDataException( "Card database artifacts come from different format " + "generations." );
@@ -260,10 +261,10 @@ public static class CardDatabase
 
 		try
 		{
-			dataStream = FileSystem.Data.OpenRead( DatabaseFileInfo.CardDataFile );
+			dataStream = FileSystem.Data.OpenRead( paths.CardData );
 
 			if ( !dataStream.CanSeek )
-				throw new NotSupportedException( $"'{DatabaseFileInfo.CardDataFile}' must support seeking." );
+				throw new NotSupportedException( $"'{paths.CardData}' must support seeking." );
 
 			if ( dataStream.Length != expectedDataLength )
 				throw new InvalidDataException( $"Card data is {dataStream.Length} bytes, but its " + $"contiguous index describes {expectedDataLength} bytes." );
@@ -726,6 +727,12 @@ public static class CardDatabase
 		if ( string.IsNullOrWhiteSpace( card.Gameplay.Name ) )
 			throw new InvalidDataException( $"Record {recordId} has no card name." );
 
+		if ( string.IsNullOrWhiteSpace( card.Gameplay.LayoutCode ) || card.Gameplay.Capabilities is null )
+			throw new InvalidDataException( $"Record {recordId} has no source layout or derived capabilities." );
+
+		if ( card.Gameplay.Capabilities.FaceCount != card.Gameplay.Faces.Length )
+			throw new InvalidDataException( $"Record {recordId} capability face count does not match its card faces." );
+
 		if ( !Enum.IsDefined( card.Gameplay.Layout ) || !Enum.IsDefined( card.Presentation.BorderColor ) || !Enum.IsDefined( card.Presentation.Frame ) || !Enum.IsDefined( card.Presentation.Rarity ) )
 			throw new InvalidDataException( $"Record {recordId} contains an undefined domain enum." );
 
@@ -740,6 +747,9 @@ public static class CardDatabase
 
 		if ( card.Presentation.Finishes is null )
 			throw new InvalidDataException( $"Record {recordId} has null finishes." );
+
+		if ( card.Presentation.FinishCodes is null || string.IsNullOrWhiteSpace( card.Presentation.BorderColorCode ) || string.IsNullOrWhiteSpace( card.Presentation.FrameCode ) || string.IsNullOrWhiteSpace( card.Presentation.RarityCode ) )
+			throw new InvalidDataException( $"Record {recordId} is missing raw presentation vocabulary." );
 
 		foreach ( CardFinish finish in card.Presentation.Finishes )
 		{
@@ -785,27 +795,27 @@ public static class CardDatabase
 	}
 
 
-	private static CardIndexFile ReadIndexFile()
+	private static CardIndexFile ReadIndexFile( string path )
 	{
-		return ReadVersionedFile<CardIndexFile>( DatabaseFileInfo.CardIndexFile, "card database" );
+		return ReadVersionedFile<CardIndexFile>( path, "card database" );
 	}
 
 
-	private static CardSymbolDefinitionFile ReadSymbolDefinitionFile()
+	private static CardSymbolDefinitionFile ReadSymbolDefinitionFile( string path )
 	{
-		return ReadVersionedFile<CardSymbolDefinitionFile>( DatabaseFileInfo.SymbolDefinitionsFile, "symbol-definition" );
+		return ReadVersionedFile<CardSymbolDefinitionFile>( path, "symbol-definition" );
 	}
 
 
-	private static CardSetDefinitionFile ReadSetDefinitionFile()
+	private static CardSetDefinitionFile ReadSetDefinitionFile( string path )
 	{
-		return ReadVersionedFile<CardSetDefinitionFile>( DatabaseFileInfo.SetDefinitionsFile, "set-definition" );
+		return ReadVersionedFile<CardSetDefinitionFile>( path, "set-definition" );
 	}
 
 
-	private static CardRulingFile ReadRulingFile()
+	private static CardRulingFile ReadRulingFile( string path )
 	{
-		return ReadVersionedFile<CardRulingFile>( DatabaseFileInfo.RulingsFile, "ruling" );
+		return ReadVersionedFile<CardRulingFile>( path, "ruling" );
 	}
 
 

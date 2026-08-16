@@ -1,6 +1,8 @@
 #nullable enable
 
 using Sandbox.Classes.Cards;
+using Sandbox.Classes.Zones;
+using Sandbox.Framework;
 using System;
 namespace Sandbox.Framework.Table;
 
@@ -10,9 +12,9 @@ namespace Sandbox.Framework.Table;
 /// </summary>
 public sealed class TableAnchor : Component
 {
-	[Property] public float PlayerRadius { get; set; } = CardMesh.DefaultWidth * 2.4f;
+	[Property] public float PlayerRadius { get; set; } = 500f;
 
-	[Property] public float CameraHeight { get; set; } = CardMesh.DefaultWidth * 5f;
+	[Property] public float CameraHeight { get; set; } = 1000;
 
 	[Property] public float CameraPitch { get; set; } = 5f;
 
@@ -26,7 +28,7 @@ public sealed class TableAnchor : Component
 	public Transform PlayerSpot( int index, int count )
 	{
 		count = Math.Max( count, 1 );
-		float    angle        = 360f * index / count - 90f;
+		float    angle        = 360f * index / count - 90;
 		Vector3  local        = Rotation.FromYaw( angle ) * new Vector3( PlayerRadius, 0f, 0f );
 		Vector3  position     = WorldPosition + WorldRotation * local;
 		Vector3  towardCenter = ( WorldPosition - position ).WithZ( 0f ).Normal;
@@ -40,11 +42,13 @@ public sealed class TableAnchor : Component
 	///     This computes a top-down / angled overview camera transform that looks at the center point.
 	/// </summary>
 	/// <returns> </returns>
-	public Transform OverviewCamera()
+	public Transform OverviewCamera( Seat? viewer = null )
 	{
-		float   tilt = CameraHeight * MathF.Tan( CameraPitch.DegreeToRadian() );
-		Vector3 eye  = WorldPosition + WorldRotation * new Vector3( 0f, -tilt, CameraHeight );
+		float   tilt       = CameraHeight * MathF.Tan( CameraPitch.DegreeToRadian() );
+		Vector3 screenUp   = viewer is null? WorldRotation.Forward : ( WorldPosition - viewer.WorldPosition ).WithZ( 0f ).Normal;
+		Vector3 eyeOffset  = viewer is null? WorldRotation.Backward : -screenUp;
+		Vector3 eye        = WorldPosition + eyeOffset * tilt + WorldRotation.Up * CameraHeight;
 
-		return new Transform( eye, Rotation.LookAt( ( WorldPosition - eye ).Normal, WorldRotation.Forward ) );
+		return new Transform( eye, Rotation.LookAt( ( WorldPosition - eye ).Normal, screenUp ) );
 	}
 }

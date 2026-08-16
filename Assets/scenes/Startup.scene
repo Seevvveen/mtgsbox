@@ -216,18 +216,6 @@
           "ScaleStrategy": "ConsistentHeight",
           "TargetCamera": null,
           "ZIndex": 100
-        },
-        {
-          "__type": "Sandbox.DeckImport",
-          "__guid": "108e6c44-0d53-48b9-926d-dfa868952ed3",
-          "__enabled": true,
-          "Flags": 0,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
         }
       ],
       "Children": []
@@ -253,13 +241,52 @@
           "__guid": "0ba2ed0b-779e-4d23-a96e-6dcae78cc127",
           "__enabled": true,
           "Flags": 0,
-          "Format": null,
+          "FormatFile": "commander.format",
+          "IsMultiplayer": true,
+          "LobbyName": "Magic: The Gathering",
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "d88d5cd5-8df8-46a3-b21f-9adba68e9c4a",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Screen",
+      "Position": "0.652388573,-1.84670877,51.2919617",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ScreenPanel",
+          "__guid": "ae7e8809-719e-41d6-b006-308a91bf1b97",
+          "__enabled": true,
+          "Flags": 0,
+          "AutoScreenScale": true,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Opacity": 1,
+          "Scale": 1,
+          "ScaleStrategy": "ConsistentHeight",
+          "TargetCamera": null,
+          "ZIndex": 100
         }
       ],
       "Children": []
@@ -287,7 +314,8 @@
     "GameObjectSystems": {
       "Sandbox.Clutter.ClutterGridSystem": {
         "Storage": {
-          "$blob": "c28887a4-c7a2-4b80-afed-82bd74a0ec25"
+          "$blob": "64db792e-5935-8fbc-8cfa-050cd49fa7fd",
+          "$refs": []
         }
       },
       "Sandbox.SelectionSetsSystem": {

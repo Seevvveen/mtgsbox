@@ -1,84 +1,167 @@
 #nullable enable
 
 using Sandbox.Classes.Cards;
-using Sandbox.Classes.Deck;
 using Sandbox.Framework.GameInfo;
-using System;
+using Sandbox.Framework.Table;
+using Sandbox.Framework.UI;
+using Sandbox.Network;
 namespace Sandbox.Framework;
 
 /// <summary>
-///     Host Authority Coordinator
-///     Dictates the source of truth between host and clients
+/// CONTROLS THE LIFETIMES OF MATCH OBJECTS
 /// </summary>
-public sealed partial class GameDirector : Component
+public sealed class GameDirector : Component, Component.INetworkListener
 {
-	private readonly  Dictionary<Guid, Deck> _submittedDecks = [ ];
-	[Property] public GameFormat?            Format { get; set; }
+	[Property] public bool IsMultiplayer { get; set; } = true;
+	[Property] public string LobbyName { get; set; } = "Magic: The Gathering";
+	[Property, Sync( SyncFlags.FromHost )] public MTGFormat? FormatFile { get; set; }
 
-	[Sync] public Guid        MatchId    { get; set; }
-	[Sync] public GameState   State      { get; set; } = GameState.Lobby;
-	[Sync] public string      StatusText { get; set; } = "Waiting for players";
-	[Sync] public MatchResult Result     { get; set; }
+	public Match? ActiveMatch => Scene.Get<Match>();
 
-
-	//
-	// Helpers
-	//
-	public RulesEngine RulesEngine
-	{
-		get { return Scene.Get<RulesEngine>() ?? throw new InvalidOperationException( "The scene has no MtgGameRules component." ); }
-	}
-
-	public PlayerRoster Roster
-	{
-		get { return Scene.Get<PlayerRoster>() ?? throw new InvalidOperationException( "No Player Roster" ); }
-	}
-
-	public TurnManager TurnManager
-	{
-		get { return Scene.Get<TurnManager>() ?? throw new InvalidOperationException( "No Turn Manager" ); }
-	}
-
-	public PriorityManager Priority
-	{
-		get { return Scene.Get<PriorityManager>() ?? throw new InvalidOperationException( "No Priority Manager" ); }
-	}
-
-	public StackManager Stack
-	{
-		get { return Scene.Get<StackManager>() ?? throw new InvalidOperationException( "No Stack Manager" ); }
-	}
+	void INetworkListener.OnActive( Connection channel ) => ActiveMatch?.AddPlayer( channel );
+	void INetworkListener.OnDisconnected( Connection channel ) => ActiveMatch?.RemovePlayer( channel );
 
 
 	protected override void OnStart()
 	{
-		Mouse.Visibility = MouseVisibility.Visible;
+		base.OnStart();
 
+		if ( Application.IsHeadless )
+			return;
+
+		GameMenu? menu = Scene.Components.Get<GameMenu>( FindMode.EverythingInDescendants );
+
+		if ( menu is null )
+		{
+			ScreenPanel? screenPanel = Scene.Components.Get<ScreenPanel>( FindMode.EverythingInDescendants );
+			GameObject screen;
+
+			if ( screenPanel is null )
+			{
+				screen = new GameObject( true, "Initial Game Screen" );
+				screen.Components.Create<ScreenPanel>();
+			}
+			else
+			{
+				screen = screenPanel.GameObject;
+			}
+
+			screen.Enabled = true;
+			menu = screen.Components.Create<GameMenu>();
+		}
+
+		menu.GameObject.Enabled = true;
+		menu.Enabled = true;
+
+		InGameStatePanel? gameStatePanel = Scene.Components.Get<InGameStatePanel>( FindMode.EverythingInDescendants );
+
+		if ( gameStatePanel is null )
+			gameStatePanel = menu.GameObject.Components.Create<InGameStatePanel>();
+
+		gameStatePanel.GameObject.Enabled = true;
+		gameStatePanel.Enabled = true;
+		GetOrAddComponent<CardHover>();
+
+		if ( Scene.Camera is { } camera && camera.GameObject.Components.Get<TableCamera>() is null )
+			camera.GameObject.Components.Create<TableCamera>();
+
+		Mouse.Visibility = MouseVisibility.Visible;
+	}
+
+	/// <summary>
+	///     Opens a public lobby and creates the match players will ready up for.
+	/// </summary>
+	public void StartLobby()
+	{
 		if ( !Networking.IsHost )
 			return;
 
-		if ( MatchId == Guid.Empty )
-			MatchId = Guid.NewGuid();
+		if ( ActiveMatch is not null )
+			return;
+
+		if ( FormatFile is null || FormatFile.Prefab is null )
+		{
+			Log.Warning( "A format and match prefab must be assigned before starting a lobby." );
+			return;
+		}
+
+		if ( IsMultiplayer && !Networking.IsActive )
+		{
+			Networking.CreateLobby(
+				new LobbyConfig
+				{
+					Name = LobbyName,
+					Privacy = LobbyPrivacy.Public,
+					AutoSwitchToBestHost = false,
+					DestroyWhenHostLeaves = true
+				}
+			);
+		}
+
+		if ( SpawnMatch( FormatFile ) is not { } match )
+			return;
+
+		if ( IsMultiplayer )
+		{
+			Networking.ServerName = LobbyName;
+			Networking.SetData( "state", "joinable" );
+		}
+
+		// OnActive normally adds the host. Keeping this explicit also makes the
+		// lobby work in local/offline sessions where no network callback is raised.
+		match.AddPlayer( Connection.Local );
+
+		if ( !IsMultiplayer )
+			match.Begin();
 	}
 
 
-	public bool StartGame()
+	/// <summary>
+	/// Take a Format and Spawn it
+	/// </summary>
+	private Match? SpawnMatch(MTGFormat format)
 	{
-		return false;
+		var go = GameObject.Clone( format.Prefab );
+
+		if ( go.Components.Get<Match>() is not { } match )
+		{
+			Log.Warning( "Format prefab does not contain a Match component." );
+			go.Destroy();
+			return null;
+		}
+
+		go.NetworkSpawn();
+		return match;
 	}
 
 
-	public bool EndGame()
+	public void EndMatch()
 	{
-		return false;
+		if ( !Networking.IsHost )
+			return;
+
+		if ( ActiveMatch is not { } match )
+			return;
+
+		match.Conclude();
+		match.GameObject.Destroy();
+
 	}
 
 
-	public void OnPlayerJoined( Connection Channel ) { }
+	public void LeaveGame()
+	{
+		if ( Networking.IsHost )
+		{
+			EndMatch();
+			return;
+		}
 
+		Networking.Disconnect();
 
-	public void OnPlayerDisconnected( Connection Channel ) { }
+		if ( ActiveMatch is not { } match )
+			return;
 
-
-	public void OnTurnCompleted() { }
+		match.GameObject.Destroy();
+	}
 }

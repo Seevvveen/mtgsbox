@@ -41,12 +41,12 @@ public sealed class ZoneCountIndicator : Component
 			return;
 		}
 
-		if ( _lastCount == _zone.CardCount && _lastType == _zone.ZoneType )
+		if ( _lastCount == _zone.CardCount && _lastType == _zone.Type )
 			return;
 
 		_lastCount = _zone.CardCount;
-		_lastType  = _zone.ZoneType;
-		_values.SetValue( "zone-count", $"{_zone.ZoneType.ToString().ToUpperInvariant()}: " + $"{_zone.CardCount}", new Vector3( 0f, -CardMesh.Height * 0.58f, MathF.Max( _zone.BaseLift, 0.1f ) ), Accent, CardMesh.Width );
+		_lastType  = _zone.Type;
+		_values.SetValue( "zone-count", $"{_zone.Type.ToString().ToUpperInvariant()}: " + $"{_zone.CardCount}", new Vector3( 0f, -_zone.ActiveSize.y * 0.58f, MathF.Max( _zone.BaseLift, 0.1f ) ), Accent, CardMesh.Width );
 	}
 }
 
@@ -93,12 +93,17 @@ public sealed class CardValueIndicators : Component
 						  new Vector3( CardMesh.Width * 0.62f, 0f, CardMesh.Thickness ),
 						  new Color( 0.72f, 0.48f, 1f ),
 						  () =>
-						  {
-							  GameDirector? director = Scene.Get<GameDirector>();
+							  {
+								  Match? match = Scene.Get<Match>();
 
-							  if ( director is not null )
-								  director.RequestFlipCard( _card );
-							  else if ( !_card.GameObject.Network.IsProxy )
+								  if ( match is not null )
+								  {
+									  if ( match.PriorityPlayerId == Connection.Local.Id )
+										  match.RequestFlipCard( _card );
+									  else
+										  _card.Pulse();
+								  }
+								  else if ( !_card.GameObject.Network.IsProxy )
 								  _card.FlipPrintedFace();
 						  },
 						  CardMesh.Width * 0.48f

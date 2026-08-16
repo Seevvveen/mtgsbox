@@ -1,14 +1,15 @@
 {
-  "DisplayName": "Magic",
-  "Tutorial": "",
-  "FormatCode": "standard",
-  "RulesPrefab": null,
-  "MinimumPlayers": 2,
-  "MaximumPlayers": 2,
-  "StartingLife": 20,
+  "DisplayName": "Commander",
+  "FormatCode": "commander",
+  "DeckSize": 100,
+  "MinimumPlayers": 1,
+  "MaximumPlayers": 8,
+  "StartingLife": 40,
   "TurnTimeLimit": 0,
-  "CardWidth": 63,
-  "CardThicknessRatio": 0.015873017,
+  "RequiredRuleModules": [
+    "mtg.commander"
+  ],
+  "Prefab": "commander.prefab",
   "__references": [],
   "__version": 0
 }

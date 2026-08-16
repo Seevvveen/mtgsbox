@@ -27,6 +27,8 @@ public sealed record CardGameplayData
 	public required Guid             ScryfallId     { get; init; }
 	public          Guid?            OracleId       { get; init; }
 	public required CardLayout       Layout         { get; init; }
+	public required string           LayoutCode     { get; init; }
+	public required CardCapabilities Capabilities   { get; init; }
 	public          string?          SourceManaCost { get; init; }
 	public required CardFace[]       Faces          { get; init; }
 	public required decimal          ManaValue      { get; init; }
@@ -59,17 +61,21 @@ public sealed record CardPresentationData
 	public          int[]?          AttractionLights    { get; init; }
 	public          bool            Booster             { get; init; }
 	public required BorderColor     BorderColor         { get; init; }
+	public required string          BorderColorCode     { get; init; }
 	public          Guid?           CardBack            { get; init; }
 	public required string          CollectorNumber     { get; init; }
 	public          bool?           ContentWarning      { get; init; }
 	public          bool            Digital             { get; init; }
 	public          CardFinish[]    Finishes            { get; init; } = [ ];
+	public          string[]        FinishCodes          { get; init; } = [ ];
 	public          bool            Foil                { get; init; }
 	public          bool            Nonfoil             { get; init; }
 	public          string?         FlavorName          { get; init; }
 	public          string?         FlavorText          { get; init; }
 	public required CardFrame       Frame               { get; init; }
+	public required string          FrameCode           { get; init; }
 	public          FrameEffect[]?  FrameEffects        { get; init; }
+	public          string[]?       FrameEffectCodes     { get; init; }
 	public          bool            FullArt             { get; init; }
 	public          string[]        Games               { get; init; } = [ ];
 	public          bool            HighResolutionImage { get; init; }
@@ -85,6 +91,7 @@ public sealed record CardPresentationData
 	public          bool            Promo               { get; init; }
 	public          string[]?       PromoTypes          { get; init; }
 	public required CardRarity      Rarity              { get; init; }
+	public required string          RarityCode          { get; init; }
 	public          DateTime?       ReleasedAt          { get; init; }
 	public          bool            Reprint             { get; init; }
 	public          string?         SecurityStamp       { get; init; }
@@ -94,6 +101,19 @@ public sealed record CardPresentationData
 	public          Guid?           VariationOf         { get; init; }
 	public          string?         Watermark           { get; init; }
 	public          CardPreview?    Preview             { get; init; }
+}
+
+/// <summary>
+///     Stable properties derived from card structure. Gameplay should consume
+///     these capabilities instead of branching on Scryfall layout vocabulary.
+/// </summary>
+public sealed record CardCapabilities
+{
+	public int  FaceCount              { get; init; }
+	public bool HasPrintedBack         { get; init; }
+	public bool IsTokenLike            { get; init; }
+	public bool IsSupplemental          { get; init; }
+	public bool SupportsDeckConstruction { get; init; }
 }
 
 public sealed record CardIdentifierData

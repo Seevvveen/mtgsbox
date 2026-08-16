@@ -12,12 +12,13 @@ public readonly record struct ZoneSlotTextures
 {
 	public required Texture  Atlas    { get; init; }
 	public required Material Material { get; init; }
+	public required Model    Model    { get; init; }
 
 
 	public void ApplyTo( ModelRenderer renderer )
 	{
 		ArgumentNullException.ThrowIfNull( renderer );
-		renderer.Model            = CardMesh.Shared;
+		renderer.Model            = Model;
 		renderer.MaterialOverride = Material;
 	}
 }
@@ -32,16 +33,18 @@ public static class SlotRenderer
 	[SkipHotload] private static readonly Dictionary<string, ZoneSlotTextures> Cache    = new Dictionary<string, ZoneSlotTextures>( StringComparer.Ordinal );
 
 
-	public static ZoneSlotTextures BuildSlot( ZoneType zone, int resolution = 512 )
+	public static ZoneSlotTextures BuildSlot( ZoneType zone, Vector2 size, int resolution = 512 )
 	{
+		size.x     = MathF.Max( size.x, 0.1f );
+		size.y     = MathF.Max( size.y, 0.1f );
 		resolution = Math.Max( resolution, 128 );
-		string key = $"{zone}|{resolution}";
+		string key = $"{zone}|{size.x:R}|{size.y:R}|{resolution}";
 
 		if ( Cache.TryGetValue( key, out ZoneSlotTextures cached ) && cached.Atlas.IsLoaded )
 			return cached;
 
 		int    height = resolution;
-		int    width  = Math.Max( (int)MathF.Round( height * CardFaceRenderer.Aspect ), 1 );
+		int    width  = Math.Max( (int)MathF.Round( height * size.x / size.y ), 1 );
 		Bitmap face   = new Bitmap( width, height );
 		DrawZoneFace( face, zone, width, height );
 
@@ -53,7 +56,8 @@ public static class SlotRenderer
 		Texture  texture  = atlas.ToTexture();
 		Material material = CardMaterialFactory.Create( $"mtgsbox_zone_{zone}_{resolution}", texture );
 
-		ZoneSlotTextures result = new ZoneSlotTextures { Atlas = texture, Material = material };
+		Model            model  = CardMesh.CreateModel( size.x, size.y, CardMesh.Thickness );
+		ZoneSlotTextures result = new ZoneSlotTextures { Atlas = texture, Material = material, Model = model };
 		Cache[key] = result;
 
 		return result;

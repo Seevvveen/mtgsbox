@@ -83,7 +83,8 @@ public enum CardFinish
 {
 	Nonfoil = 0,
 	Foil    = 1,
-	Etched  = 2
+	Etched  = 2,
+	Unknown = 3
 }
 
 /// <summary>

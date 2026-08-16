@@ -89,6 +89,12 @@ public static class DeckValidator
 
 	private static void ValidateCardLegality( NormalizedCard card, Guid oracleId, DeckEntry entry, DeckFormatDefinition format, DeckValidationReport report )
 	{
+		if ( !card.Gameplay.Capabilities.SupportsDeckConstruction )
+		{
+			Add( report, DeckValidationIssueCode.CardNotLegal, $"'{card.Gameplay.Name}' is supplemental or uses an unsupported card layout and cannot be included in a constructed deck.", entry );
+			return;
+		}
+
 		if ( format.BannedOracleIds.Contains( oracleId ) )
 		{
 			Add( report, DeckValidationIssueCode.CardBanned, $"'{card.Gameplay.Name}' is banned in " + $"{format.DisplayName}.", entry );
@@ -99,12 +105,13 @@ public static class DeckValidator
 		string        legalityCode = format.CardLegalityCode ?? format.Code;
 		CardLegality? legality     = card.Gameplay.Legalities.Get( legalityCode );
 
-		switch ( legality )
-		{
+			switch ( legality )
+			{
 			case CardLegality.Banned: Add( report, DeckValidationIssueCode.CardBanned, $"'{card.Gameplay.Name}' is banned in " + $"{format.DisplayName}.", entry ); break;
 
-			case null:
-			case CardLegality.NotLegal:
+				case null:
+				case CardLegality.Unknown:
+				case CardLegality.NotLegal:
 				Add( report, DeckValidationIssueCode.CardNotLegal, $"'{card.Gameplay.Name}' is not legal in " + $"{format.DisplayName}.", entry );
 
 			break;

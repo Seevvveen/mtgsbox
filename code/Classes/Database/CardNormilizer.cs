@@ -17,6 +17,11 @@ public static class ScryfallCardNormalizer
 	{
 		ArgumentNullException.ThrowIfNull( dto );
 		string objectKind = RequireObjectKind( dto.Object, "object", "card" );
+		string layoutCode = RequireString( dto.Layout, "layout" );
+		string borderColorCode = RequireString( dto.BorderColor, "border_color" );
+		string frameCode = RequireString( dto.Frame, "frame" );
+		string rarityCode = RequireString( dto.Rarity, "rarity" );
+		CardFace[] faces = NormalizeFaces( dto );
 
 		return new NormalizedCard
 			   {
@@ -24,9 +29,11 @@ public static class ScryfallCardNormalizer
 							  {
 								  ScryfallId     = ParseRequiredGuid( dto.Id, "id" ),
 								  OracleId       = ParseOptionalGuid( dto.OracleId, "oracle_id" ),
-								  Layout         = ParseLayout( RequireString( dto.Layout, "layout" ) ),
+								  Layout         = ParseLayout( layoutCode ),
+								  LayoutCode     = layoutCode,
+								  Capabilities   = DeriveCapabilities( layoutCode, faces ),
 								  SourceManaCost = dto.ManaCost,
-								  Faces          = NormalizeFaces( dto ),
+								  Faces          = faces,
 								  ManaValue      = dto.Cmc,
 								  ColorIdentity  = ParseRequiredColors( dto.ColorIdentity, "color_identity" ),
 								  Colors         = ParseOptionalColors( dto.Colors, "colors" ),
@@ -55,18 +62,22 @@ public static class ScryfallCardNormalizer
 									  ArtistIds           = ParseOptionalGuidArray( dto.ArtistIds, "artist_ids" ),
 									  AttractionLights    = CopyNullableArray( dto.AttractionLights ),
 									  Booster             = dto.Booster,
-									  BorderColor         = ParseBorderColor( RequireString( dto.BorderColor, "border_color" ) ),
+									  BorderColor         = ParseBorderColor( borderColorCode ),
+									  BorderColorCode     = borderColorCode,
 									  CardBack            = ParseOptionalGuid( dto.CardBackId, "card_back_id" ),
 									  CollectorNumber     = RequireString( dto.CollectorNumber, "collector_number" ),
 									  ContentWarning      = dto.ContentWarning,
 									  Digital             = dto.Digital,
 									  Finishes            = ParseFinishes( dto.Finishes ),
+									  FinishCodes          = CopyArray( dto.Finishes ),
 									  Foil                = dto.Foil,
 									  Nonfoil             = dto.Nonfoil,
 									  FlavorName          = dto.FlavorName,
 									  FlavorText          = dto.FlavorText,
-									  Frame               = ParseFrame( RequireString( dto.Frame, "frame" ) ),
+									  Frame               = ParseFrame( frameCode ),
+									  FrameCode           = frameCode,
 									  FrameEffects        = ParseFrameEffects( dto.FrameEffects ),
+									  FrameEffectCodes     = CopyNullableArray( dto.FrameEffects ),
 									  FullArt             = dto.FullArt,
 									  Games               = CopyArray( dto.Games ),
 									  HighResolutionImage = dto.HighresImage,
@@ -81,7 +92,8 @@ public static class ScryfallCardNormalizer
 									  PrintedTypeLine     = dto.PrintedTypeLine,
 									  Promo               = dto.Promo,
 									  PromoTypes          = CopyNullableArray( dto.PromoTypes ),
-									  Rarity              = ParseRarity( RequireString( dto.Rarity, "rarity" ) ),
+									  Rarity              = ParseRarity( rarityCode ),
+									  RarityCode          = rarityCode,
 									  ReleasedAt          = dto.ReleasedAt,
 									  Reprint             = dto.Reprint,
 									  SecurityStamp       = dto.SecurityStamp,
@@ -124,6 +136,24 @@ public static class ScryfallCardNormalizer
 						   },
 				   Source = new CardSourceMetadata { Object = objectKind, Language = RequireString( dto.Lang, "lang" ), Extensions = CopyExtensions( dto.AdditionalFields ) }
 			   };
+	}
+
+
+	private static CardCapabilities DeriveCapabilities( string layoutCode, CardFace[] faces )
+	{
+		bool tokenLike = layoutCode is "token" or "double_faced_token" or "emblem";
+		bool supplemental = tokenLike || layoutCode is "art_series" or "front_card";
+		bool printedBack = faces.Length > 1 && faces.Skip( 1 ).Any( face => face.Images is not null );
+		bool recognizedLayout = ParseLayout( layoutCode ) != CardLayout.Unknown;
+
+		return new CardCapabilities
+		{
+			FaceCount = faces.Length,
+			HasPrintedBack = printedBack,
+			IsTokenLike = tokenLike,
+			IsSupplemental = supplemental,
+			SupportsDeckConstruction = recognizedLayout && !supplemental
+		};
 	}
 
 
@@ -297,6 +327,7 @@ public static class ScryfallCardNormalizer
 			throw MissingField( "legalities" );
 
 		Dictionary<string, CardLegality> result = new Dictionary<string, CardLegality>( values.Count, StringComparer.OrdinalIgnoreCase );
+		Dictionary<string, string> sourceValues = new Dictionary<string, string>( values, StringComparer.OrdinalIgnoreCase );
 
 		foreach ( KeyValuePair<string, string> pair in values )
 		{
@@ -306,11 +337,11 @@ public static class ScryfallCardNormalizer
 								   "legal"      => CardLegality.Legal,
 								   "restricted" => CardLegality.Restricted,
 								   "banned"     => CardLegality.Banned,
-								   _            => throw UnknownValue( $"legalities.{pair.Key}", pair.Value )
-							   };
+								   _            => CardLegality.Unknown
+								};
 		}
 
-		return new FormatLegalities { ByFormat = result };
+		return new FormatLegalities { ByFormat = result, SourceValues = sourceValues };
 	}
 
 
@@ -328,7 +359,7 @@ public static class ScryfallCardNormalizer
 								 "nonfoil" => CardFinish.Nonfoil,
 								 "foil"    => CardFinish.Foil,
 								 "etched"  => CardFinish.Etched,
-								 _         => throw UnknownValue( "finishes", values[index] )
+								 _         => CardFinish.Unknown
 							 };
 		}
 
@@ -466,7 +497,8 @@ public static class ScryfallCardNormalizer
 				   "host"               => CardLayout.Host,
 				   "art_series"         => CardLayout.ArtSeries,
 				   "reversible_card"    => CardLayout.ReversibleCard,
-				   _                    => throw UnknownValue( "layout", value )
+				   "front_card"         => CardLayout.FrontCard,
+				   _                    => CardLayout.Unknown
 			   };
 	}
 
@@ -480,7 +512,7 @@ public static class ScryfallCardNormalizer
 				   "2003"   => CardFrame.Frame2003,
 				   "2015"   => CardFrame.Frame2015,
 				   "future" => CardFrame.Future,
-				   _        => throw UnknownValue( "frame", value )
+				   _        => CardFrame.Unknown
 			   };
 	}
 
@@ -495,7 +527,7 @@ public static class ScryfallCardNormalizer
 				   "silver"     => BorderColor.Silver,
 				   "yellow"     => BorderColor.Yellow,
 				   "gold"       => BorderColor.Gold,
-				   _            => throw UnknownValue( "border_color", value )
+				   _            => BorderColor.Unknown
 			   };
 	}
 
@@ -510,7 +542,7 @@ public static class ScryfallCardNormalizer
 				   "special"  => CardRarity.Special,
 				   "mythic"   => CardRarity.Mythic,
 				   "bonus"    => CardRarity.Bonus,
-				   _          => throw UnknownValue( "rarity", value )
+				   _          => CardRarity.Unknown
 			   };
 	}
 
@@ -561,7 +593,7 @@ public static class ScryfallCardNormalizer
 				   "upsidedowndfc"          => FrameEffect.UpsideDownDfc,
 				   "spree"                  => FrameEffect.Spree,
 				   "fullart"                => FrameEffect.Fullart,
-				   _                        => throw UnknownValue( "frame_effects", value )
+				   _                        => FrameEffect.Unknown
 			   };
 	}
 

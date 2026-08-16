@@ -24,9 +24,9 @@ static class DatabaseFileInfo
 
 	public const int MaxCardRecordBytes = 4 * 1024 * 1024;
 
-	// Version 4 stores domain enums by stable names rather than declaration
-	// positions. Version 5 adds deck-import lookup indexes.
-	public const int CurrentFormatVersion        = 5;
+	// Version 7 preserves open-ended provider vocabulary, derives stable card
+	// capabilities, and stores immutable transactional generations.
+	public const int CurrentFormatVersion        = 7;
 	public const int OldestReadableFormatVersion = 3;
 
 	public static readonly JsonSerializerOptions ImportJsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };

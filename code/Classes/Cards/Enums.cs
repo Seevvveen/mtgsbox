@@ -26,7 +26,9 @@ public enum CardLayout
 	Augment          = 21,
 	Host             = 22,
 	ArtSeries        = 23,
-	ReversibleCard   = 24
+	ReversibleCard   = 24,
+	FrontCard        = 25,
+	Unknown          = 26
 }
 
 public enum CardRarity
@@ -36,5 +38,6 @@ public enum CardRarity
 	Rare     = 2,
 	Special  = 3,
 	Mythic   = 4,
-	Bonus    = 5
+	Bonus    = 5,
+	Unknown  = 6
 }

@@ -84,20 +84,6 @@ public sealed class PlainTextDeckParser
 			return;
 		}
 
-		if ( resolution.IsAmbiguous )
-		{
-			issues.Add(
-					   new DeckImportIssue
-					   {
-						   Severity   = DeckImportIssueSeverity.Warning,
-						   Code       = DeckImportIssueCode.AmbiguousCard,
-						   LineNumber = lineNumber,
-						   RawText    = raw,
-						   Message    = $"'{query.Name}' matched {resolution.MatchCount} " + "printings; the default printing was selected."
-					   }
-					  );
-		}
-
 		AddOrMerge( deck, section, quantity, resolution.Card! );
 	}
 
@@ -164,6 +150,11 @@ public sealed class PlainTextDeckParser
 			string setCode = NormalizeSetCode( query.SetCode );
 			matches = matches.Where( card => string.Equals( card.Set.Code, setCode, StringComparison.OrdinalIgnoreCase ) ).ToArray();
 		}
+
+		NormalizedCard[] deckConstructibleMatches = matches.Where( card => card.Gameplay.Capabilities.SupportsDeckConstruction ).ToArray();
+
+		if ( deckConstructibleMatches.Length > 0 )
+			matches = deckConstructibleMatches;
 
 		return matches.Length == 0? new DeckCardResolution() : new DeckCardResolution { Card = CreateReference( matches[0] ), MatchCount = matches.Length };
 	}

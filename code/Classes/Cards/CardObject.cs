@@ -9,6 +9,19 @@ using RuntimeCardDatabase = Sandbox.Classes.Database.CardDatabase;
 
 namespace Sandbox.Classes.Cards;
 
+internal static class CardVisibilityPolicy
+{
+	public static Guid KnownPrintingId( Guid revealedPrintingId, Guid privatePrintingId )
+	{
+		return revealedPrintingId != Guid.Empty? revealedPrintingId : privatePrintingId;
+	}
+
+	public static bool IsPrivateView( Guid knownPrintingId, Guid revealedPrintingId )
+	{
+		return knownPrintingId != Guid.Empty && revealedPrintingId == Guid.Empty;
+	}
+}
+
 /// <summary>
 ///     Runtime representation of one physical card in the world.
 ///     Hidden card identities are kept authority-side and are only sent publicly
@@ -37,11 +50,19 @@ public sealed class CardObject : Component
 
 	private float _hover;
 	private float _hoverTarget;
+	private GameObject? _localDragPreview;
+	private ModelRenderer? _localDragRenderer;
+	private bool _localDragGrabObserved;
+	private Guid _localDragOriginZoneId;
+	private bool _localDragReleased;
+	private float _localDragReleaseAge;
+	private bool _rendererEnabledBeforeDrag;
 	private bool  _moving;
 	private Guid  _privatePrintingId;
 	private float _pulseAge = -1f;
 	private bool? _renderedConcealed;
 	private Guid  _renderedPrintingId;
+	private bool  _renderedPrivateView;
 
 	private ModelRenderer? _renderer;
 	private int            _renderGeneration;
@@ -80,6 +101,8 @@ public sealed class CardObject : Component
 
 	[Sync] public Guid GrabbedByPlayerId { get; set; }
 
+	[Sync] public bool IsDeclaredCommander { get; set; }
+
 	[Sync] public bool Tapped { get; set; }
 
 	/// <summary>
@@ -87,16 +110,7 @@ public sealed class CardObject : Component
 	/// </summary>
 	public Guid KnownPrintingId
 	{
-		get
-		{
-			if ( RevealedPrintingId != Guid.Empty )
-				return RevealedPrintingId;
-
-			if ( GameObject.Network.IsOwner )
-				return _privatePrintingId != Guid.Empty? _privatePrintingId : _authoritativePrintingId;
-
-			return Guid.Empty;
-		}
+		get { return CardVisibilityPolicy.KnownPrintingId( RevealedPrintingId, _privatePrintingId ); }
 	}
 
 	public bool IsConcealed
@@ -133,8 +147,49 @@ public sealed class CardObject : Component
 
 	protected override void OnDestroy()
 	{
+		DestroyLocalDragPreview();
 		_renderGeneration++;
 		base.OnDestroy();
+	}
+
+
+	public void BeginLocalDragPreview()
+	{
+		if ( Application.IsHeadless || _renderer is null || _localDragPreview is not null )
+			return;
+
+		_localDragPreview = new GameObject( true, "Local Card Drag Preview" );
+		_localDragPreview.Tags.Add( "dragging" );
+		_localDragRenderer = _localDragPreview.Components.Create<ModelRenderer>();
+		_rendererEnabledBeforeDrag = _renderer.Enabled;
+		_renderer.Enabled = false;
+		_localDragOriginZoneId = ZoneId;
+		_localDragGrabObserved = false;
+		_localDragReleased = false;
+		_localDragReleaseAge = 0f;
+		CopyLocalDragAppearance();
+	}
+
+
+	public void UpdateLocalDragPreview( Transform pose )
+	{
+		if ( _localDragPreview is null )
+			return;
+
+		_localDragPreview.WorldPosition = pose.Position;
+		_localDragPreview.WorldRotation = pose.Rotation;
+		_localDragPreview.LocalScale = WorldScale;
+		CopyLocalDragAppearance();
+	}
+
+
+	public void ReleaseLocalDragPreview()
+	{
+		if ( _localDragPreview is null )
+			return;
+
+		_localDragReleased = true;
+		_localDragReleaseAge = 0f;
 	}
 
 
@@ -150,7 +205,7 @@ public sealed class CardObject : Component
 			throw new InvalidOperationException( "Only the card authority can assign its hidden identity." );
 
 		_authoritativePrintingId = printingId;
-		_privatePrintingId       = printingId;
+		_privatePrintingId       = OwnerPlayerId == Connection.Local.Id? printingId : Guid.Empty;
 		RevealedPrintingId       = Guid.Empty;
 		FaceIndex                = -1;
 		BeginVisualRefresh();
@@ -176,6 +231,7 @@ public sealed class CardObject : Component
 
 		RevealedPrintingId = _authoritativePrintingId;
 		FaceIndex          = faceIndex;
+		RememberIdentityForAllPlayers();
 	}
 
 
@@ -242,17 +298,46 @@ public sealed class CardObject : Component
 	/// </summary>
 	public void ShareIdentityWithOwner()
 	{
-		if ( GameObject.Network.IsProxy || _authoritativePrintingId == Guid.Empty )
-			return;
-
-		ReceivePrivateIdentity( _authoritativePrintingId );
+		ShareIdentityWith( OwnerPlayerId );
 	}
 
 
-	[Rpc.Owner]
+	/// <summary>
+	///     Remembers this card's identity for one player. Knowledge survives the
+	///     card becoming concealed again, matching tabletop revealed-card memory.
+	/// </summary>
+	public void ShareIdentityWith( Guid playerId )
+	{
+		if ( GameObject.Network.IsProxy || _authoritativePrintingId == Guid.Empty || playerId == Guid.Empty )
+			return;
+
+		if ( !Networking.IsActive )
+		{
+			if ( playerId == Connection.Local.Id )
+				ReceivePrivateIdentity( _authoritativePrintingId );
+
+			return;
+		}
+
+		using ( Rpc.FilterInclude( connection => connection.Id == playerId ) )
+			ReceivePrivateIdentity( _authoritativePrintingId );
+	}
+
+
+	[Rpc.Broadcast( NetFlags.HostOnly )]
 	private void ReceivePrivateIdentity( Guid printingId )
 	{
 		_privatePrintingId = printingId;
+	}
+
+
+	private void RememberIdentityForAllPlayers()
+	{
+		if ( _authoritativePrintingId == Guid.Empty )
+			return;
+
+		_privatePrintingId = _authoritativePrintingId;
+		ReceivePrivateIdentity( _authoritativePrintingId );
 	}
 
 
@@ -438,6 +523,7 @@ public sealed class CardObject : Component
 	{
 		RefreshVisualIfChanged();
 		UpdateEmphasis();
+		UpdateLocalDragPreviewState();
 
 		if ( GameObject.Network.IsProxy )
 			return;
@@ -466,7 +552,7 @@ public sealed class CardObject : Component
 		else
 			_easedPosition = _targetPosition;
 
-		float flipTarget = FaceIndex == 0? 0f : 180f;
+		float flipTarget = LocallyVisibleFaceIndex() == 0? 0f : 180f;
 		_flip  = _flip.Approach( flipTarget, FlipSpeed     * Time.Delta );
 		_hover = _hover.Approach( _hoverTarget, Time.Delta * 10f );
 
@@ -476,15 +562,70 @@ public sealed class CardObject : Component
 	}
 
 
+	private void UpdateLocalDragPreviewState()
+	{
+		if ( _localDragPreview is null )
+			return;
+
+		CopyLocalDragAppearance();
+
+		if ( GrabbedByPlayerId == Connection.Local.Id )
+			_localDragGrabObserved = true;
+
+		if ( !_localDragReleased )
+			return;
+
+		_localDragReleaseAge += Time.Delta;
+		bool authoritativeMoveArrived = ZoneId != _localDragOriginZoneId;
+		bool authoritativeReleaseArrived = _localDragGrabObserved && GrabbedByPlayerId == Guid.Empty;
+		bool authoritativePoseArrived = Vector3.DistanceBetween( WorldPosition, _localDragPreview.WorldPosition ) < 0.5f;
+
+		if ( authoritativeMoveArrived || authoritativeReleaseArrived || authoritativePoseArrived || _localDragReleaseAge >= 2f )
+			DestroyLocalDragPreview();
+	}
+
+
+	private void CopyLocalDragAppearance()
+	{
+		if ( _renderer is null || _localDragRenderer is null )
+			return;
+
+		_localDragRenderer.Model = _renderer.Model;
+		_localDragRenderer.MaterialOverride = _renderer.MaterialOverride;
+		_localDragRenderer.Tint = _renderer.Tint;
+	}
+
+
+	private void DestroyLocalDragPreview()
+	{
+		if ( _localDragPreview is null )
+			return;
+
+		if ( _renderer is not null )
+			_renderer.Enabled = _rendererEnabledBeforeDrag;
+
+		_localDragPreview?.Destroy();
+		_localDragPreview = null;
+		_localDragRenderer = null;
+		_localDragGrabObserved = false;
+		_localDragOriginZoneId = Guid.Empty;
+		_localDragReleased = false;
+		_localDragReleaseAge = 0f;
+	}
+
+
 	private void RefreshVisualIfChanged()
 	{
 		if ( Application.IsHeadless || _renderer is null )
 			return;
 
-		bool   concealed  = FaceIndex < 0 || RevealedPrintingId == Guid.Empty;
-		string desiredKey = concealed? "concealed" : RevealedPrintingId.ToString( "N" );
+		Guid   printingId = KnownPrintingId;
+		bool   concealed  = printingId == Guid.Empty;
+		bool   privateView = CardVisibilityPolicy.IsPrivateView( printingId, RevealedPrintingId );
+		string desiredKey = concealed? "concealed" : $"{printingId:N}|{( privateView? "private" : "public" )}";
 
-		if ( _renderedConcealed == concealed && ( concealed || _renderedPrintingId == RevealedPrintingId ) )
+		if ( _renderedConcealed == concealed &&
+			( concealed || _renderedPrintingId == printingId && _renderedPrivateView == privateView ) )
 			return;
 
 		if ( string.Equals( _requestedVisualKey, desiredKey, StringComparison.Ordinal ) )
@@ -500,8 +641,10 @@ public sealed class CardObject : Component
 			return;
 
 		int  generation = ++_renderGeneration;
-		bool concealed  = FaceIndex < 0 || RevealedPrintingId == Guid.Empty;
-		_requestedVisualKey = concealed? "concealed" : RevealedPrintingId.ToString( "N" );
+		Guid printingId = KnownPrintingId;
+		bool concealed  = printingId == Guid.Empty;
+		bool privateView = CardVisibilityPolicy.IsPrivateView( printingId, RevealedPrintingId );
+		_requestedVisualKey = concealed? "concealed" : $"{printingId:N}|{( privateView? "private" : "public" )}";
 
 		if ( concealed )
 		{
@@ -510,7 +653,6 @@ public sealed class CardObject : Component
 			return;
 		}
 
-		Guid            printingId = RevealedPrintingId;
 		NormalizedCard? card;
 
 		try
@@ -537,7 +679,7 @@ public sealed class CardObject : Component
 			return;
 		}
 
-		_ = ApplyCardAsync( card, generation );
+		_ = ApplyCardAsync( card, generation, privateView );
 	}
 
 
@@ -554,6 +696,7 @@ public sealed class CardObject : Component
 			HasPrintedBack      = false;
 			_renderedPrintingId = Guid.Empty;
 			_renderedConcealed  = true;
+			_renderedPrivateView = false;
 			_requestedVisualKey = null;
 		}
 		catch ( Exception exception )
@@ -567,11 +710,11 @@ public sealed class CardObject : Component
 	}
 
 
-	private async Task ApplyCardAsync( NormalizedCard card, int generation )
+	private async Task ApplyCardAsync( NormalizedCard card, int generation, bool privateView )
 	{
 		try
 		{
-			CardTextures textures = await CardFaceRenderer.BuildCardAsync( card );
+			CardTextures textures = await CardFaceRenderer.BuildCardAsync( card, privateView: privateView );
 
 			if ( generation != _renderGeneration || _renderer is null )
 				return;
@@ -580,6 +723,7 @@ public sealed class CardObject : Component
 			HasPrintedBack      = textures.HasPrintedBack;
 			_renderedPrintingId = card.Gameplay.ScryfallId;
 			_renderedConcealed  = false;
+			_renderedPrivateView = privateView;
 			_failedPrintingId   = Guid.Empty;
 			_requestedVisualKey = null;
 		}
@@ -648,6 +792,15 @@ public sealed class CardObject : Component
 	private float PulseAmount()
 	{
 		return _pulseAge < 0f? 0f : MathF.Sin( _pulseAge / PulseDuration * MathF.PI );
+	}
+
+
+	private int LocallyVisibleFaceIndex()
+	{
+		if ( RevealedPrintingId != Guid.Empty )
+			return FaceIndex;
+
+		return _privatePrintingId != Guid.Empty? 0 : -1;
 	}
 
 

@@ -14,6 +14,12 @@ static class CardMaterialFactory
 	{
 		ArgumentNullException.ThrowIfNull( color );
 
+		// Material.Create still validates runtime/anonymous material names as
+		// resource paths. Supplying the normal material extension prevents
+		// FixupResourceName warnings for every generated card and zone marker.
+		if ( !name.EndsWith( ".vmat", StringComparison.OrdinalIgnoreCase ) )
+			name += ".vmat";
+
 		Material material = Material.Create( name, "complex.shader", anonymous );
 
 		material.Set( "g_tColor", color );

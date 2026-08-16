@@ -1,4 +1,7 @@
 ﻿#nullable enable
+using Sandbox.Classes.Cards;
+using Sandbox.Classes.Cards.CardFrames;
+using Sandbox.Classes.Cards.Legality;
 using Sandbox.Classes.Cards.ManaSymbols;
 using Sandbox.Classes.Database.Types;
 using System;
@@ -17,6 +20,8 @@ public static class DatabaseBuilder
 	public static void BuildDatabase( CancellationToken cancellationToken = default(CancellationToken) )
 	{
 		cancellationToken.ThrowIfCancellationRequested();
+		DatabaseArtifactPaths paths = DatabaseGenerationStore.CreateGenerationPaths();
+		Dictionary<string, HashSet<string>> unknownValues = new Dictionary<string, HashSet<string>>( StringComparer.Ordinal );
 
 		List<CardSymbolDefinition>          symbolDefinitions  = ReadSymbolDefinitions( cancellationToken );
 		List<CardSetDefinition>             setDefinitions     = ReadSetDefinitions( cancellationToken );
@@ -26,9 +31,9 @@ public static class DatabaseBuilder
 
 		using Stream input = FileSystem.Data.OpenRead( DatabaseFileInfo.SourceFile );
 
-		using Stream outputData = FileSystem.Data.OpenWrite( DatabaseFileInfo.CardDataFile );
+		using Stream outputData = FileSystem.Data.OpenWrite( paths.CardData );
 
-		PrepareOutputStream( outputData, DatabaseFileInfo.CardDataFile );
+		PrepareOutputStream( outputData, paths.CardData );
 
 		List<CardIndexEntry>      indexEntries     = [ ];
 		List<CardIdMapping>       idMappings       = [ ];
@@ -40,7 +45,17 @@ public static class DatabaseBuilder
 									   input,
 									   ( dto, _ ) =>
 									   {
-										   NormalizedCard card = ScryfallCardNormalizer.Normalize( dto );
+										   NormalizedCard card;
+
+										   try
+										   {
+											   card = ScryfallCardNormalizer.Normalize( dto );
+										   }
+										   catch ( InvalidDataException exception )
+										   {
+											   throw new DatabaseSourceCompatibilityException( $"Card source object {_} cannot be normalized by database format v{DatabaseFileInfo.CurrentFormatVersion}: {exception.Message}", exception );
+										   }
+										   CollectUnknownValues( card, unknownValues );
 
 										   if ( !cardIds.Add( card.Gameplay.ScryfallId ) )
 											   throw new InvalidDataException( $"Duplicate Scryfall card ID " + $"'{card.Gameplay.ScryfallId}'." );
@@ -61,7 +76,7 @@ public static class DatabaseBuilder
 
 										   printingMappings.Add( new CardPrintingMapping { SetCode = card.Set.Code, CollectorNumber = card.Presentation.CollectorNumber, RecordId = recordId } );
 
-										   nameMappings.Add( new CardNameMapping { Name = card.Gameplay.Name, RecordId = recordId } );
+										   AddNameMappings( nameMappings, card, recordId );
 
 										   if ( card.Gameplay.OracleId is Guid oracleId )
 											   oracleMappings.Add( new CardOracleMapping { OracleId = oracleId, RecordId = recordId } );
@@ -72,6 +87,7 @@ public static class DatabaseBuilder
 
 		cancellationToken.ThrowIfCancellationRequested();
 		outputData.Flush();
+		outputData.Dispose();
 
 		CardIndexFile indexFile = new CardIndexFile
 								  {
@@ -85,15 +101,99 @@ public static class DatabaseBuilder
 								  };
 
 		cancellationToken.ThrowIfCancellationRequested();
-		WriteIndexFile( indexFile );
+		WriteIndexFile( paths.CardIndex, indexFile );
 		cancellationToken.ThrowIfCancellationRequested();
-		WriteSymbolDefinitionsFile( symbolDefinitions );
+		WriteSymbolDefinitionsFile( paths.Symbols, symbolDefinitions );
 		cancellationToken.ThrowIfCancellationRequested();
-		WriteSetDefinitionsFile( setDefinitions );
+		WriteSetDefinitionsFile( paths.Sets, setDefinitions );
 		cancellationToken.ThrowIfCancellationRequested();
-		WriteRulingsFile( rulings );
+		WriteRulingsFile( paths.Rulings, rulings );
+		cancellationToken.ThrowIfCancellationRequested();
 
-		Log.Info( $"Database build complete. Stored {indexEntries.Count:N0} cards " + $"{setDefinitions.Count:N0} sets, {rulings.Count:N0} rulings, " + $"and {symbolDefinitions.Count:N0} symbol definitions." );
+		Dictionary<string, string[]> diagnosticSummary = unknownValues.ToDictionary(
+			pair => pair.Key,
+			pair => pair.Value.OrderBy( value => value, StringComparer.Ordinal ).ToArray(),
+			StringComparer.Ordinal
+		);
+		DatabaseGenerationManifest manifest = DatabaseGenerationStore.CompleteGeneration( paths, diagnosticSummary );
+
+		foreach ( KeyValuePair<string, string[]> diagnostic in diagnosticSummary )
+			Log.Warning( $"Preserved unknown Scryfall {diagnostic.Key} value(s): {string.Join( ", ", diagnostic.Value )}." );
+
+		Log.Info( $"Database generation {manifest.GenerationId} complete. Stored {indexEntries.Count:N0} cards " + $"{setDefinitions.Count:N0} sets, {rulings.Count:N0} rulings, " + $"and {symbolDefinitions.Count:N0} symbol definitions." );
+	}
+
+
+	private static void CollectUnknownValues( NormalizedCard card, Dictionary<string, HashSet<string>> unknownValues )
+	{
+		if ( card.Gameplay.Layout == CardLayout.Unknown )
+			Add( "layout", card.Gameplay.LayoutCode );
+
+		if ( card.Presentation.BorderColor == BorderColor.Unknown )
+			Add( "border_color", card.Presentation.BorderColorCode );
+
+		if ( card.Presentation.Frame == CardFrame.Unknown )
+			Add( "frame", card.Presentation.FrameCode );
+
+		if ( card.Presentation.Rarity == CardRarity.Unknown )
+			Add( "rarity", card.Presentation.RarityCode );
+
+		for ( int index = 0; index < card.Presentation.Finishes.Length; index++ )
+		{
+			if ( card.Presentation.Finishes[index] == CardFinish.Unknown && index < card.Presentation.FinishCodes.Length )
+				Add( "finishes", card.Presentation.FinishCodes[index] );
+		}
+
+		if ( card.Presentation.FrameEffects is not null && card.Presentation.FrameEffectCodes is not null )
+		{
+			for ( int index = 0; index < card.Presentation.FrameEffects.Length && index < card.Presentation.FrameEffectCodes.Length; index++ )
+			{
+				if ( card.Presentation.FrameEffects[index] == FrameEffect.Unknown )
+					Add( "frame_effects", card.Presentation.FrameEffectCodes[index] );
+			}
+		}
+
+		foreach ( KeyValuePair<string, CardLegality> legality in card.Gameplay.Legalities.ByFormat )
+		{
+			if ( legality.Value == CardLegality.Unknown && card.Gameplay.Legalities.SourceValues.TryGetValue( legality.Key, out string? raw ) )
+				Add( $"legalities.{legality.Key}", raw );
+		}
+
+		void Add( string field, string value )
+		{
+			if ( !unknownValues.TryGetValue( field, out HashSet<string>? values ) )
+			{
+				values = new HashSet<string>( StringComparer.Ordinal );
+				unknownValues.Add( field, values );
+			}
+
+			values.Add( value );
+		}
+	}
+
+
+	/// <summary>
+	///     Indexes both Scryfall's canonical card name and the individual names
+	///     printed on each face. Scryfall uses a combined top-level name for
+	///     multi-faced cards (for example, "Front // Back"), while deck lists
+	///     commonly contain only the front-face name.
+	/// </summary>
+	private static void AddNameMappings( List<CardNameMapping> mappings, NormalizedCard card, int recordId )
+	{
+		HashSet<string> names = new HashSet<string>( StringComparer.OrdinalIgnoreCase );
+
+		AddName( card.Gameplay.Name );
+
+		foreach ( CardFace face in card.Gameplay.Faces )
+			AddName( face.Name );
+
+		void AddName( string name )
+		{
+			string normalized = name.Trim();
+
+			if ( normalized.Length > 0 && names.Add( normalized ) )
+				mappings.Add( new CardNameMapping { Name = normalized, RecordId = recordId } );
+		}
 	}
 
 
@@ -273,40 +373,40 @@ public static class DatabaseBuilder
 	}
 
 
-	private static void WriteIndexFile( CardIndexFile indexFile )
+	private static void WriteIndexFile( string path, CardIndexFile indexFile )
 	{
 		byte[]       bytes  = JsonSerializer.SerializeToUtf8Bytes( indexFile, DatabaseFileInfo.DatabaseJsonOptions );
-		using Stream output = FileSystem.Data.OpenWrite( DatabaseFileInfo.CardIndexFile );
-		PrepareOutputStream( output, DatabaseFileInfo.CardIndexFile );
+		using Stream output = FileSystem.Data.OpenWrite( path );
+		PrepareOutputStream( output, path );
 		output.Write( bytes, 0, bytes.Length );
 		output.Flush();
 	}
 
 
-	private static void WriteSymbolDefinitionsFile( List<CardSymbolDefinition> definitions )
+	private static void WriteSymbolDefinitionsFile( string path, List<CardSymbolDefinition> definitions )
 	{
 		CardSymbolDefinitionFile symbolFile = new CardSymbolDefinitionFile { FormatVersion = DatabaseFileInfo.CurrentFormatVersion, SymbolCount = definitions.Count, Symbols = definitions };
 
 		byte[] bytes = JsonSerializer.SerializeToUtf8Bytes( symbolFile, DatabaseFileInfo.DatabaseJsonOptions );
 
-		using Stream output = FileSystem.Data.OpenWrite( DatabaseFileInfo.SymbolDefinitionsFile );
+		using Stream output = FileSystem.Data.OpenWrite( path );
 
-		PrepareOutputStream( output, DatabaseFileInfo.SymbolDefinitionsFile );
+		PrepareOutputStream( output, path );
 
 		output.Write( bytes, 0, bytes.Length );
 		output.Flush();
 	}
 
 
-	private static void WriteSetDefinitionsFile( List<CardSetDefinition> definitions )
+	private static void WriteSetDefinitionsFile( string path, List<CardSetDefinition> definitions )
 	{
-		WriteJsonFile( DatabaseFileInfo.SetDefinitionsFile, new CardSetDefinitionFile { FormatVersion = DatabaseFileInfo.CurrentFormatVersion, SetCount = definitions.Count, Sets = definitions } );
+		WriteJsonFile( path, new CardSetDefinitionFile { FormatVersion = DatabaseFileInfo.CurrentFormatVersion, SetCount = definitions.Count, Sets = definitions } );
 	}
 
 
-	private static void WriteRulingsFile( List<CardRuling> rulings )
+	private static void WriteRulingsFile( string path, List<CardRuling> rulings )
 	{
-		WriteJsonFile( DatabaseFileInfo.RulingsFile, new CardRulingFile { FormatVersion = DatabaseFileInfo.CurrentFormatVersion, RulingCount = rulings.Count, Rulings = rulings } );
+		WriteJsonFile( path, new CardRulingFile { FormatVersion = DatabaseFileInfo.CurrentFormatVersion, RulingCount = rulings.Count, Rulings = rulings } );
 	}
 
 
