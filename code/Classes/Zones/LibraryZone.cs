@@ -10,7 +10,7 @@ public sealed class LibraryZone : ZoneObject
 	public override ZoneType Type => ZoneType.Library;
 	public override MtgZoneCardState DefaultCardState => MtgZoneCardState.Concealed;
 	protected override bool EnforcePhysicalStackSpacing => true;
-
+	
 
 	public CardObject? TakeTop()
 	{

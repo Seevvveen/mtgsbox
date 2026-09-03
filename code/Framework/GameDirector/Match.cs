@@ -26,7 +26,7 @@ public class Match : Component
 	private Task? _databaseHandshakeTask;
 	private string _databaseHandshakeTarget = string.Empty;
 
-	[Sync( SyncFlags.FromHost )] public GameState State { get; private set; } = GameState.Lobby;
+	[Sync( SyncFlags.FromHost )] public MatchState State { get; private set; } = MatchState.Lobby;
 	[Sync( SyncFlags.FromHost )] public string StatusText { get; private set; } = "Waiting for players";
 	[Sync( SyncFlags.FromHost )] public int LobbyRevision { get; private set; }
 	[Sync( SyncFlags.FromHost )] public string RulesProfile { get; private set; } = string.Empty;
@@ -167,14 +167,14 @@ public class Match : Component
 		seat.SelectedCard = null;
 		_databaseVerifiedPlayers.Remove( channel.Id );
 
-		if ( State is GameState.Mulligan or GameState.Playing )
+		if ( State is MatchState.Mulligan or MatchState.Playing )
 		{
 			EnsureRuntime();
 			_executor!.Execute( RuleDecision.Permit( new ConcedeCommand( seat ) ), seat );
 
-			if ( State == GameState.Playing && ActivePlayerId == seat.Player )
+			if ( State == MatchState.Playing && ActivePlayerId == seat.Player )
 				Flow.Turns.EndTurn();
-			else if ( State == GameState.Playing && PriorityPlayerId == seat.Player )
+			else if ( State == MatchState.Playing && PriorityPlayerId == seat.Player )
 				Flow.Priority.Begin();
 
 			return;
@@ -183,7 +183,7 @@ public class Match : Component
 		seat.GameObject.Destroy();
 		LayoutSeats( seat );
 
-		if ( State == GameState.Lobby )
+		if ( State == MatchState.Lobby )
 			RefreshLobbyStatus( seat );
 	}
 
@@ -195,7 +195,7 @@ public class Match : Component
 	[Rpc.Host]
 	public void SubmitDeck( string deckJson )
 	{
-		if ( State != GameState.Lobby )
+		if ( State != MatchState.Lobby )
 			return;
 
 		Seat? seat = SeatFor( Rpc.Caller );
@@ -270,7 +270,7 @@ public class Match : Component
 		{
 			seat.DeckError = readiness.Message;
 
-			if ( State == GameState.Lobby )
+			if ( State == MatchState.Lobby )
 				RefreshLobbyStatus();
 
 			return;
@@ -296,13 +296,13 @@ public class Match : Component
 		if ( Scene.Get<GameDirector>()?.IsMultiplayer == true && Rules.CanBegin( this, Seats ).Verdict == RuleVerdict.Deny )
 			return;
 
-		State = GameState.Loading;
+		State = MatchState.Loading;
 		StatusText = "Preparing the table";
 		LobbyRevision++;
 
 		Rules.SetupMatch( Seats );
 
-		State = GameState.Playing;
+		State = MatchState.Playing;
 		StatusText = "Match in progress";
 		LobbyRevision++;
 		Flow.Start();
@@ -450,7 +450,7 @@ public class Match : Component
 				seat.Outcome = ReferenceEquals( seat, winner )? SeatOutcome.Win : SeatOutcome.Loss;
 		}
 
-		State = GameState.Finished;
+		State = MatchState.Finished;
 		StatusText = winner is null? "Match finished" : $"{winner.PlayerName} wins";
 
 		if ( detail.Length > 0 )

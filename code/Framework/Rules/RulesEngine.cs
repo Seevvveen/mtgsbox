@@ -384,9 +384,9 @@ public sealed class RulesEngine : Component
 		public RuleEvaluation Evaluate( GameIntent intent, RulesContext context )
 		{
 			if ( intent is ConcedeIntent )
-				return context.MatchState is GameState.Mulligan or GameState.Playing? RuleEvaluation.Allow() : RuleEvaluation.Deny( "match.not_playing", "You can only concede after the match has started." );
+				return context.MatchState is MatchState.Mulligan or MatchState.Playing? RuleEvaluation.Allow() : RuleEvaluation.Deny( "match.not_playing", "You can only concede after the match has started." );
 
-			return context.MatchState == GameState.Playing? RuleEvaluation.Allow() : RuleEvaluation.Deny( "match.not_playing", "That action is only available while the match is being played." );
+			return context.MatchState == MatchState.Playing? RuleEvaluation.Allow() : RuleEvaluation.Deny( "match.not_playing", "That action is only available while the match is being played." );
 		}
 	}
 
@@ -581,7 +581,7 @@ public sealed class RulesEngine : Component
 
 		public RuleEvaluation CanJoin( Match match, Connection connection, IReadOnlyList<Seat> seats )
 		{
-			if ( match.State != GameState.Lobby )
+			if ( match.State != MatchState.Lobby )
 				return RuleEvaluation.Deny( "lobby.closed", "The match is no longer accepting participants." );
 
 			return seats.Count < _format.MaximumPlayers? RuleEvaluation.Allow() : RuleEvaluation.Deny( "lobby.full", "The match has no open seats." );
@@ -590,7 +590,7 @@ public sealed class RulesEngine : Component
 
 		public RuleEvaluation CanSubmitDeck( Match match, Seat seat, Deck deck )
 		{
-			if ( match.State != GameState.Lobby )
+			if ( match.State != MatchState.Lobby )
 				return RuleEvaluation.Deny( "deck.lobby_closed", "Decks can only be submitted in the lobby." );
 
 			return string.IsNullOrWhiteSpace( deck.FormatCode ) || string.Equals( deck.FormatCode, _format.FormatCode, StringComparison.OrdinalIgnoreCase )? RuleEvaluation.Allow() : RuleEvaluation.Deny( "deck.wrong_format", $"This lobby requires a {_format.DisplayName} deck." );
@@ -599,7 +599,7 @@ public sealed class RulesEngine : Component
 
 		public RuleEvaluation CanSetReady( Match match, Seat seat, bool ready )
 		{
-			if ( match.State != GameState.Lobby )
+			if ( match.State != MatchState.Lobby )
 				return RuleEvaluation.Deny( "ready.lobby_closed", "Ready state can only change in the lobby." );
 
 			return !ready || seat.HasSubmittedDeck? RuleEvaluation.Allow() : RuleEvaluation.Deny( "ready.deck_required", "Submit a valid deck before readying up." );
@@ -608,7 +608,7 @@ public sealed class RulesEngine : Component
 
 		public RuleEvaluation CanBegin( Match match, IReadOnlyList<Seat> seats )
 		{
-			if ( match.State != GameState.Lobby )
+			if ( match.State != MatchState.Lobby )
 				return RuleEvaluation.Deny( "match.already_started", "The match has already started." );
 
 			if ( seats.Count < _format.MinimumPlayers || seats.Count > _format.MaximumPlayers )

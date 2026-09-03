@@ -14,7 +14,7 @@ public sealed record RulesContext
 	public required Match Match { get; init; }
 	public required Seat Actor { get; init; }
 	public required IReadOnlyList<Seat> Seats { get; init; }
-	public required GameState MatchState { get; init; }
+	public required MatchState MatchState { get; init; }
 	public required MatchFlowSnapshot Flow { get; init; }
 }
 

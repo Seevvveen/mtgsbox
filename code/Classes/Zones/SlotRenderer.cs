@@ -38,7 +38,7 @@ public static class SlotRenderer
 		size.x     = MathF.Max( size.x, 0.1f );
 		size.y     = MathF.Max( size.y, 0.1f );
 		resolution = Math.Max( resolution, 128 );
-		string key = $"{zone}|{size.x:R}|{size.y:R}|{resolution}";
+		string key = $"material:{CardMaterialFactory.CacheVersion}|{zone}|{size.x:R}|{size.y:R}|{resolution}";
 
 		if ( Cache.TryGetValue( key, out ZoneSlotTextures cached ) && cached.Atlas.IsLoaded )
 			return cached;

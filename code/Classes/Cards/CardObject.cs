@@ -61,6 +61,7 @@ public sealed class CardObject : Component
 	private Guid  _privatePrintingId;
 	private float _pulseAge = -1f;
 	private bool? _renderedConcealed;
+	private int   _renderedMaterialVersion;
 	private Guid  _renderedPrintingId;
 	private bool  _renderedPrivateView;
 
@@ -622,9 +623,11 @@ public sealed class CardObject : Component
 		Guid   printingId = KnownPrintingId;
 		bool   concealed  = printingId == Guid.Empty;
 		bool   privateView = CardVisibilityPolicy.IsPrivateView( printingId, RevealedPrintingId );
-		string desiredKey = concealed? "concealed" : $"{printingId:N}|{( privateView? "private" : "public" )}";
+		string desiredKey = concealed
+			? $"material:{CardMaterialFactory.CacheVersion}|concealed"
+			: $"material:{CardMaterialFactory.CacheVersion}|{printingId:N}|{( privateView? "private" : "public" )}";
 
-		if ( _renderedConcealed == concealed &&
+		if ( _renderedMaterialVersion == CardMaterialFactory.CacheVersion && _renderedConcealed == concealed &&
 			( concealed || _renderedPrintingId == printingId && _renderedPrivateView == privateView ) )
 			return;
 
@@ -644,7 +647,9 @@ public sealed class CardObject : Component
 		Guid printingId = KnownPrintingId;
 		bool concealed  = printingId == Guid.Empty;
 		bool privateView = CardVisibilityPolicy.IsPrivateView( printingId, RevealedPrintingId );
-		_requestedVisualKey = concealed? "concealed" : $"{printingId:N}|{( privateView? "private" : "public" )}";
+		_requestedVisualKey = concealed
+			? $"material:{CardMaterialFactory.CacheVersion}|concealed"
+			: $"material:{CardMaterialFactory.CacheVersion}|{printingId:N}|{( privateView? "private" : "public" )}";
 
 		if ( concealed )
 		{
@@ -696,6 +701,7 @@ public sealed class CardObject : Component
 			HasPrintedBack      = false;
 			_renderedPrintingId = Guid.Empty;
 			_renderedConcealed  = true;
+			_renderedMaterialVersion = CardMaterialFactory.CacheVersion;
 			_renderedPrivateView = false;
 			_requestedVisualKey = null;
 		}
@@ -723,6 +729,7 @@ public sealed class CardObject : Component
 			HasPrintedBack      = textures.HasPrintedBack;
 			_renderedPrintingId = card.Gameplay.ScryfallId;
 			_renderedConcealed  = false;
+			_renderedMaterialVersion = CardMaterialFactory.CacheVersion;
 			_renderedPrivateView = privateView;
 			_failedPrintingId   = Guid.Empty;
 			_requestedVisualKey = null;

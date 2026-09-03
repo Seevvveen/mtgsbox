@@ -3,7 +3,7 @@
 using Sandbox.Classes.Cards;
 namespace Sandbox.Framework.GameInfo;
 
-public enum GameState
+public enum MatchState
 {
 	Lobby,
 	Loading,

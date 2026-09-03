@@ -66,6 +66,7 @@ public abstract class ZoneObject : Component
 
 	private Vector2        _configuredSize;
 	private int            _configuredMarkerResolution;
+	private int            _configuredMaterialVersion;
 	private bool           _configuredShowMarker;
 	private float          _configuredTriggerHeight;
 	private ZoneType       _configuredType;
@@ -135,6 +136,7 @@ public abstract class ZoneObject : Component
 
 		if ( _configuredSize != ActiveSize ||
 			 _configuredMarkerResolution != MarkerResolution ||
+			 _configuredMaterialVersion != CardMaterialFactory.CacheVersion ||
 			 _configuredShowMarker != ShowMarker ||
 			 _configuredTriggerHeight != TriggerHeight ||
 			 _configuredType != Type )
@@ -254,6 +256,7 @@ public abstract class ZoneObject : Component
 		Vector2 size = ActiveSize;
 		_configuredSize             = size;
 		_configuredMarkerResolution = MarkerResolution;
+		_configuredMaterialVersion  = CardMaterialFactory.CacheVersion;
 		_configuredShowMarker       = ShowMarker;
 		_configuredTriggerHeight    = TriggerHeight;
 		_configuredType             = Type;

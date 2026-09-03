@@ -1,11 +1,14 @@
 @using Sandbox
+@using Sandbox.Network
 @using Sandbox.UI
 @using System
+@using System.Threading
 @using Sandbox.Classes.Deck
 @using Sandbox.Classes.Deck.Import
 @using Sandbox.Classes.Database
 @using Sandbox.Framework
 @using Sandbox.Framework.GameInfo
+@using Sandbox.Framework.Table
 
 @inherits PanelComponent
 @namespace Sandbox.Framework.UI
@@ -13,170 +16,261 @@
 <root class="@RootClass()">
 	@if ( Match is null )
 	{
-		<div class="menu-card">
-			<div class="eyebrow">MULTIPLAYER TABLETOP</div>
-			<div class="game-title">Magic: The Gathering</div>
-			<div class="game-subtitle">Bring a deck, gather your players, and take a seat.</div>
-
-			<div class="format-section">
-				<div class="format-label">CHOOSE A FORMAT</div>
-
-				<div class="format-options">
-					@foreach ( MTGFormat format in AvailableFormats )
-					{
-						<button class="format-option @(IsSelected( format ) ? "selected" : string.Empty)"
-							onclick="@(() => SelectFormat( format ))">
-							<div class="format-option-top">
-								<div class="format-name">@format.DisplayName</div>
-								<div class="selection-mark">@(IsSelected( format ) ? "check_circle" : "radio_button_unchecked")</div>
-							</div>
-							<div class="format-code">@format.FormatCode</div>
-							<div class="format-details">@FormatSummary( format )</div>
-						</button>
-					}
-
-					@if ( AvailableFormats.Count == 0 )
-					{
-						<div class="no-formats">No MTG format assets were found.</div>
-					}
+		<div class="menu-shell">
+			<div class="brand-panel">
+				<div class="brand-mark">M</div>
+				<div class="eyebrow">TABLETOP SANDBOX</div>
+				<div class="game-title">Magic<br />Sandbox</div>
+				<div class="game-subtitle">Build decks, find a table, and play.</div>
+				<div class="database-status @(Database?.IsReady == true ? "ready" : string.Empty)">
+					<div class="status-dot"></div>
+					<div>@(Database?.StatusMessage ?? "Card database unavailable")</div>
 				</div>
 			</div>
 
-			@if ( MenuMessage.Length > 0 )
-			{
-				<div class="menu-message">@MenuMessage</div>
-			}
+			<div class="content-panel">
+				@if ( CurrentPage == MenuPage.Main )
+				{
+					<div class="page-heading">
+						<div class="page-title">Main Menu</div>
+						<div class="page-copy">What would you like to do?</div>
+					</div>
 
-			@if ( Networking.IsHost )
-			{
-				<button class="primary start-button @(Director?.FormatFile is null ? "disabled" : string.Empty)" onclick="@StartLobby">Start</button>
-			}
-			else
-			{
-				<div class="waiting-host">Waiting for the host to open the lobby…</div>
-			}
+					<div class="main-actions">
+						<button class="menu-action primary" onclick="@(() => OpenPage( MenuPage.StartMatch ))">
+							<div class="action-icon">add_circle</div>
+							<div class="action-copy"><div class="action-title">Start a Match</div><div class="action-detail">Create a new table and invite players</div></div>
+						</button>
+
+						<button class="menu-action" onclick="@QuickFindMatch">
+							<div class="action-icon">travel_explore</div>
+							<div class="action-copy"><div class="action-title">@(_isFinding ? "Finding a Match…" : "Find a Match")</div><div class="action-detail">Quickly join the first available table</div></div>
+						</button>
+
+						<button class="menu-action" onclick="@(() => OpenPage( MenuPage.MatchList ))">
+							<div class="action-icon">list</div>
+							<div class="action-copy"><div class="action-title">Match List</div><div class="action-detail">Browse all currently available tables</div></div>
+						</button>
+
+						<button class="menu-action" onclick="@(() => OpenPage( MenuPage.DeckEditor ))">
+							<div class="action-icon">style</div>
+							<div class="action-copy"><div class="action-title">Deck Editor</div><div class="action-detail">Import and inspect a deck list</div></div>
+						</button>
+
+						<button class="menu-action" onclick="@(() => OpenPage( MenuPage.Settings ))">
+							<div class="action-icon">settings</div>
+							<div class="action-copy"><div class="action-title">Game Settings</div><div class="action-detail">Change table and camera preferences</div></div>
+						</button>
+
+						<button class="menu-action danger" onclick="@ExitGame">
+							<div class="action-icon">logout</div>
+							<div class="action-copy"><div class="action-title">Exit Game</div><div class="action-detail">Return to your desktop</div></div>
+						</button>
+					</div>
+				}
+				else
+				{
+					<div class="subpage-header">
+						<button class="back-button" onclick="@(() => OpenPage( MenuPage.Main ))">arrow_back</button>
+						<div class="page-heading">
+							<div class="page-title">@PageTitle</div>
+							<div class="page-copy">@PageDescription</div>
+						</div>
+					</div>
+
+					@if ( CurrentPage == MenuPage.StartMatch )
+					{
+						<div class="scroll-content">
+							<div class="section-label">FORMAT</div>
+							<div class="format-list">
+								@foreach ( MTGFormat format in AvailableFormats )
+								{
+									<button class="format-option @(IsSelected( format ) ? "selected" : string.Empty)" onclick="@(() => SelectFormat( format ))">
+										<div><div class="format-name">@format.DisplayName</div><div class="format-details">@FormatSummary( format )</div></div>
+										<div class="selection-mark">@(IsSelected( format ) ? "check_circle" : "radio_button_unchecked")</div>
+									</button>
+								}
+								@if ( AvailableFormats.Count == 0 )
+								{
+									<div class="empty-state">No MTG format assets were found.</div>
+								}
+							</div>
+
+							<div class="section-label">TABLE</div>
+							<TextEntry class="text-input" Value:bind="@LobbyName" Placeholder="Match name" />
+							<button class="setting-row" onclick="@ToggleMultiplayer">
+								<div><div class="setting-name">Table type</div><div class="setting-detail">@(Director?.IsMultiplayer == true ? "Public multiplayer lobby" : "Local practice match")</div></div>
+								<div class="setting-value">@(Director?.IsMultiplayer == true ? "ONLINE" : "LOCAL")</div>
+							</button>
+						</div>
+
+						<button class="wide-button primary @(CanStartMatch ? string.Empty : "disabled")" onclick="@StartLobby">Create Match</button>
+					}
+					else if ( CurrentPage == MenuPage.MatchList )
+					{
+						<div class="match-toolbar">
+							<div class="match-count">@(_isRefreshing ? "Searching…" : $"{_lobbies.Count} available")</div>
+							<button class="small-button" onclick="@RefreshMatches">refresh&nbsp;&nbsp;Refresh</button>
+						</div>
+
+						<div class="match-list">
+							@foreach ( LobbyInformation lobby in _lobbies )
+							{
+								<div class="match-row">
+									<div class="match-info"><div class="match-name">@lobby.Name</div><div class="match-detail">@LobbyDetail( lobby )</div></div>
+									<button class="join-button @(CanJoin( lobby ) ? string.Empty : "disabled")" onclick="@(() => JoinLobby( lobby ))">@(lobby.IsFull ? "Full" : "Join")</button>
+								</div>
+							}
+							@if ( !_isRefreshing && _lobbies.Count == 0 )
+							{
+								<div class="empty-state tall"><div class="empty-icon">search_off</div><div>No open matches found.</div><div class="muted">Try refreshing or start your own table.</div></div>
+							}
+						</div>
+					}
+					else if ( CurrentPage == MenuPage.DeckEditor )
+					{
+						<div class="deck-editor">
+							<TextEntry class="deck-input" Value:bind="@EditorDeckText" Placeholder="Paste a deck list here…" Multiline="@true" />
+							<div class="deck-editor-actions">
+								<button class="small-button" onclick="@ClearEditor">Clear</button>
+								<button class="small-button primary" onclick="@ImportEditorDeck">Import Deck</button>
+							</div>
+
+							@if ( EditorResult is not null )
+							{
+								<div class="deck-result">
+									<div class="result-summary"><div>@EditorResult.Deck.Name</div><div>@EditorCardCount cards</div></div>
+									@foreach ( DeckImportIssue issue in EditorResult.Issues )
+									{
+										<div class="issue">@issue.Message</div>
+									}
+									<div class="card-list">
+										@foreach ( DeckEntry entry in EditorResult.Deck.Entries )
+										{
+											<div class="card-row"><div class="quantity">@entry.Quantity×</div><div class="card-name">@entry.Card.Name</div><div class="card-section">@entry.Section</div></div>
+										}
+									</div>
+								</div>
+							}
+						</div>
+					}
+					else if ( CurrentPage == MenuPage.Settings )
+					{
+						<div class="settings-list">
+							<TextEntry class="text-input" Value:bind="@LobbyName" Placeholder="Default match name" />
+							<button class="setting-row" onclick="@ToggleMultiplayer"><div><div class="setting-name">Default match type</div><div class="setting-detail">Choose online play or local practice</div></div><div class="setting-value">@(Director?.IsMultiplayer == true ? "ONLINE" : "LOCAL")</div></button>
+							<button class="setting-row" onclick="@ToggleProjection"><div><div class="setting-name">Camera projection</div><div class="setting-detail">Orthographic keeps card sizes consistent</div></div><div class="setting-value">@(TableCamera?.Orthographic == true ? "FLAT" : "PERSPECTIVE")</div></button>
+							<div class="setting-row static"><div><div class="setting-name">Camera view height</div><div class="setting-detail">Controls how much of the table is visible</div></div><div class="stepper"><button onclick="@(() => ChangeViewHeight( -100f ))">remove</button><div>@CameraViewHeight</div><button onclick="@(() => ChangeViewHeight( 100f ))">add</button></div></div>
+						</div>
+					}
+
+				}
+
+				@if ( MenuMessage.Length > 0 )
+				{
+					<div class="menu-message">@MenuMessage</div>
+				}
+			</div>
 		</div>
 	}
-	else if ( Match.State == GameState.Lobby )
+	else if ( Match.State == MatchState.Lobby )
 	{
 		<div class="lobby-shell">
 			<div class="lobby-header">
-				<div>
-					<div class="eyebrow">MATCH LOBBY</div>
-					<div class="lobby-title">@(Director?.LobbyName ?? "Magic: The Gathering")</div>
-					<div class="lobby-subtitle">@Match.StatusText</div>
-				</div>
+				<div><div class="eyebrow">MATCH LOBBY</div><div class="lobby-title">@(Director?.LobbyName ?? "Magic: The Gathering")</div><div class="page-copy">@Match.StatusText</div></div>
 				<div class="player-count">@Match.Seats.Count / @(Director?.FormatFile?.MaximumPlayers ?? 0) players</div>
 			</div>
 
 			<div class="lobby-content">
 				<div class="players-panel">
-					<div class="panel-heading">Players</div>
-
+					<div class="section-title">Players</div>
 					@foreach ( Seat seat in Match.Seats )
 					{
-						<div class="player-row @(seat.IsLocal ? "local" : string.Empty)">
-							<div class="seat-number">@(seat.Index + 1)</div>
-							<div class="player-info">
-								<div class="player-name">@seat.PlayerName @(seat.IsLocal ? "(You)" : string.Empty)</div>
-								<div class="deck-summary">@(seat.HasSubmittedDeck ? $"{seat.DeckName} · {seat.DeckCardCount} cards" : "No deck submitted")</div>
-							</div>
-							<div class="deck-badge @(seat.HasSubmittedDeck ? "complete" : string.Empty)">@(seat.HasSubmittedDeck ? "Deck ✓" : "Deck —")</div>
-							<div class="ready-badge @(seat.Ready ? "complete" : string.Empty)">@(seat.Ready ? "Ready" : "Not ready")</div>
-						</div>
-					}
-
-					@for ( int index = Match.Seats.Count; index < (Director?.FormatFile?.MinimumPlayers ?? 2); index++ )
-					{
-						<div class="player-row empty">
-							<div class="seat-number">@(index + 1)</div>
-							<div class="player-info">
-								<div class="player-name">Open seat</div>
-								<div class="deck-summary">Waiting for another connection</div>
-							</div>
-						</div>
+						<div class="player-row @(seat.IsLocal ? "local" : string.Empty)"><div class="seat-number">@(seat.Index + 1)</div><div class="player-info"><div class="player-name">@seat.PlayerName @(seat.IsLocal ? "(You)" : string.Empty)</div><div class="muted">@(seat.HasSubmittedDeck ? $"{seat.DeckName} · {seat.DeckCardCount} cards" : "No deck submitted")</div></div><div class="ready-badge @(seat.Ready ? "ready" : string.Empty)">@(seat.Ready ? "Ready" : "Waiting")</div></div>
 					}
 				</div>
 
-				<div class="deck-panel">
-					<div class="panel-heading">Your deck</div>
-					<div class="panel-copy">Paste a plain-text deck list. Submitting a replacement deck will mark you not ready.</div>
-
-					<TextEntry class="deck-input"
-						Value:bind="@DeckText"
-						Placeholder="4 Lightning Bolt&#10;4 Mountain&#10;…"
-						Multiline="@true" />
-
-					@if ( ImportIssues.Count > 0 || LocalSeat?.DeckError is { Length: > 0 } || Database?.FailureReason is { Length: > 0 } )
+				<div class="submission-panel">
+					<div class="section-title">Your Deck</div>
+					<div class="page-copy">Paste a plain-text deck list, submit it, then ready up.</div>
+					<TextEntry class="deck-input lobby-deck" Value:bind="@LobbyDeckText" Placeholder="4 Lightning Bolt&#10;4 Mountain&#10;…" Multiline="@true" />
+					@foreach ( string issue in LobbyIssues )
 					{
-						<div class="issues">
-							@foreach ( string issue in ImportIssues )
-							{
-								<div class="issue">@issue</div>
-							}
-
-							@if ( LocalSeat?.DeckError is { Length: > 0 } error )
-							{
-								<div class="issue server-error">@error</div>
-							}
-
-							@if ( Database?.FailureReason is { Length: > 0 } databaseError )
-							{
-								<div class="issue server-error">@databaseError</div>
-							}
-						</div>
+						<div class="issue">@issue</div>
 					}
-
-					<div class="deck-actions">
-						<button class="secondary @(DatabaseCompatible ? string.Empty : "disabled")" onclick="@SubmitDeck">@(LocalSeat?.HasSubmittedDeck == true ? "Replace deck" : "Submit deck")</button>
-						<button class="primary ready-button @(CanRequestReady ? string.Empty : "disabled")" onclick="@ToggleReady">
-							@(LocalSeat?.Ready == true ? "Cancel ready" : "Ready up")
-						</button>
-					</div>
+					@if ( LocalSeat?.DeckError is { Length: > 0 } deckError )
+					{
+						<div class="issue">@deckError</div>
+					}
+					<div class="lobby-actions"><button onclick="@SubmitLobbyDeck">@(LocalSeat?.HasSubmittedDeck == true ? "Replace Deck" : "Submit Deck")</button><button class="primary @(CanRequestReady ? string.Empty : "disabled")" onclick="@ToggleReady">@(LocalSeat?.Ready == true ? "Cancel Ready" : "Ready Up")</button></div>
 				</div>
 			</div>
 
-			<div class="lobby-footer">
-				<div class="privacy"><span class="status-dot"></span> Public lobby · Players can join through s&amp;box</div>
-				<div class="auto-start">The match starts automatically when every player is ready.</div>
-			</div>
+			<div class="lobby-footer"><button class="leave-button" onclick="@LeaveMatch">Leave Match</button><div class="muted">The match begins when every player is ready.</div></div>
 		</div>
 	}
 </root>
 
 @code
 {
-	private string DeckText { get; set; } = string.Empty;
-	private List<string> ImportIssues { get; set; } = [ ];
+	private enum MenuPage { Main, StartMatch, MatchList, DeckEditor, Settings }
+
+	private MenuPage CurrentPage { get; set; }
 	private string MenuMessage { get; set; } = string.Empty;
+	private string LobbyDeckText { get; set; } = string.Empty;
+	private List<string> LobbyIssues { get; set; } = [ ];
 	private bool DeckSubmissionPending { get; set; }
+	private string EditorDeckText { get; set; } = string.Empty;
+	private DeckImportResult EditorResult { get; set; }
+	private List<LobbyInformation> _lobbies = [ ];
+	private bool _isRefreshing;
+	private bool _isFinding;
+	private int _queryGeneration;
 
 	private GameDirector Director => Scene.Get<GameDirector>();
 	private DatabaseManager Database => Scene.Get<DatabaseManager>();
 	private Match Match => Director?.ActiveMatch;
 	private Seat LocalSeat => Match?.Seats.FirstOrDefault( seat => seat.IsLocal );
+	private TableCamera TableCamera => Scene.Camera?.GameObject.Components.Get<TableCamera>();
+	private int EditorCardCount => EditorResult?.Deck.Entries.Sum( entry => entry.Quantity ) ?? 0;
+	private int CameraViewHeight => (int)MathF.Round( TableCamera?.ViewHeight ?? 2000f );
+	private bool CanStartMatch => Director?.FormatFile?.Prefab is not null;
+	private string LobbyName
+	{
+		get { return Director?.LobbyName ?? string.Empty; }
+		set { if ( Director is not null ) Director.LobbyName = value; }
+	}
 	private bool DatabaseCompatible => Database?.IsReady == true && Match is not null &&
-	                                   (string.IsNullOrWhiteSpace( Match.RequiredDatabaseChecksum )
-		                                   ? Networking.IsHost
-		                                   : string.Equals( Database.DatabaseChecksum, Match.RequiredDatabaseChecksum, StringComparison.Ordinal ));
+		(string.IsNullOrWhiteSpace( Match.RequiredDatabaseChecksum )
+			? Networking.IsHost
+			: string.Equals( Database.DatabaseChecksum, Match.RequiredDatabaseChecksum, StringComparison.Ordinal ));
 	private bool CanRequestReady => DatabaseCompatible &&
-	                                (LocalSeat?.HasSubmittedDeck == true ||
-	                                 (DeckSubmissionPending && LocalSeat?.DeckError is not { Length: > 0 }));
+		(LocalSeat?.HasSubmittedDeck == true || DeckSubmissionPending && LocalSeat?.DeckError is not { Length: > 0 });
 	private IReadOnlyList<MTGFormat> AvailableFormats
 	{
 		get
 		{
-			List<MTGFormat> formats = ResourceLibrary.GetAll<MTGFormat>()
-				.OrderBy( format => format.DisplayName )
-				.ToList();
-
-			if ( Director?.FormatFile is { } selected && !formats.Contains( selected ) )
-				formats.Add( selected );
-
+			List<MTGFormat> formats = ResourceLibrary.GetAll<MTGFormat>().OrderBy( format => format.DisplayName ).ToList();
+			if ( Director?.FormatFile is { } selected && !formats.Contains( selected )) formats.Add( selected );
 			return formats;
 		}
 	}
-
+	private string PageTitle => CurrentPage switch
+	{
+		MenuPage.StartMatch => "Start a Match",
+		MenuPage.MatchList => "Current Matches",
+		MenuPage.DeckEditor => "Deck Editor",
+		MenuPage.Settings => "Game Settings",
+		_ => "Main Menu"
+	};
+	private string PageDescription => CurrentPage switch
+	{
+		MenuPage.StartMatch => "Choose a format and create your table.",
+		MenuPage.MatchList => "Select an open table to join.",
+		MenuPage.DeckEditor => "Paste a deck list to validate and inspect it.",
+		MenuPage.Settings => "Adjust defaults used by this game session.",
+		_ => string.Empty
+	};
 
 	protected override void OnTreeFirstBuilt()
 	{
@@ -184,138 +278,125 @@
 		Mouse.Visibility = MouseVisibility.Visible;
 	}
 
-
-	private void StartLobby()
+	private void OpenPage( MenuPage page )
 	{
-		if ( Director?.FormatFile is null )
-		{
-			MenuMessage = "Select a format before starting.";
-			return;
-		}
-
+		CurrentPage = page;
 		MenuMessage = string.Empty;
-		Director.StartLobby();
+		if ( page == MenuPage.MatchList ) RefreshMatches();
 	}
-
 
 	private void SelectFormat( MTGFormat format )
 	{
-		if ( !Networking.IsHost || Match is not null )
-			return;
+		if ( Director is not null ) Director.FormatFile = format;
+	}
 
-		Director.FormatFile = format;
+	private bool IsSelected( MTGFormat format ) => format == Director?.FormatFile;
+	private string FormatSummary( MTGFormat format ) => $"{format.MinimumPlayers}–{format.MaximumPlayers} players · {format.DeckSize}+ cards · {format.StartingLife} life";
+
+	private void StartLobby()
+	{
+		if (!CanStartMatch || Director is null) { MenuMessage = "Select a format with a valid match prefab first."; return; }
+		Director.LobbyName = string.IsNullOrWhiteSpace( LobbyName ) ? "Magic: The Gathering" : LobbyName.Trim();
+		Director.StartLobby();
+	}
+
+	private async void RefreshMatches()
+	{
+		if ( _isRefreshing ) return;
+		int generation = ++_queryGeneration;
+		_isRefreshing = true;
 		MenuMessage = string.Empty;
-	}
-
-
-	private bool IsSelected( MTGFormat format )
-	{
-		return format == Director?.FormatFile;
-	}
-
-
-	private void SubmitDeck()
-	{
-		ImportIssues = [ ];
-
-		if ( !DatabaseCompatible )
-		{
-			ImportIssues.Add( Database?.FailureReason ?? Database?.StatusMessage ?? "Waiting for the card database to match the host." );
-			return;
-		}
-
-		if ( Match is null || string.IsNullOrWhiteSpace( DeckText ) )
-		{
-			ImportIssues.Add( "Paste a deck list before submitting." );
-			return;
-		}
-
+		StateHasChanged();
 		try
 		{
-			DeckImportResult result = new PlainTextDeckParser().Import(
-				DeckText,
-				new DeckImportOptions
-				{
-					DeckName = "Imported Deck",
-					FormatCode = Director?.FormatFile?.FormatCode
-				}
-			);
-
-			ImportIssues = result.Issues.Select( issue => issue.Message ).ToList();
-
-			if ( result.HasErrors )
-				return;
-
-			Match.SubmitDeck( DeckJson.Serialize( result.Deck ) );
-			DeckSubmissionPending = true;
+			List<LobbyInformation> found = await Networking.QueryLobbies( CancellationToken.None );
+			if ( generation == _queryGeneration ) _lobbies = found.Where( lobby => !lobby.IsHidden ).OrderByDescending( lobby => lobby.Members ).ToList();
 		}
 		catch ( Exception exception )
 		{
-			ImportIssues.Add( exception.Message );
+			if ( generation == _queryGeneration ) MenuMessage = $"Could not load matches: {exception.Message}";
+		}
+		finally
+		{
+			if ( generation == _queryGeneration ) { _isRefreshing = false; StateHasChanged(); }
 		}
 	}
 
-
-	private void ToggleReady()
+	private async void QuickFindMatch()
 	{
-		if ( Match is null || !DatabaseCompatible )
-			return;
-
-		// The host is authoritative for deck acceptance. Do not reject the click
-		// using a synchronized client value that may still be one update behind a
-		// preceding SubmitDeck RPC; reliable RPC ordering lets the host validate
-		// the submitted deck before processing this ready request.
-		Match.SetReady( LocalSeat?.Ready != true );
+		if ( _isFinding ) return;
+		_isFinding = true;
+		MenuMessage = string.Empty;
+		StateHasChanged();
+		try
+		{
+			List<LobbyInformation> found = await Networking.QueryLobbies( CancellationToken.None );
+			LobbyInformation lobby = found.FirstOrDefault( CanJoin );
+			if ( lobby.LobbyId == 0 ) MenuMessage = "No open matches were found.";
+			else JoinLobby( lobby );
+		}
+		catch ( Exception exception )
+		{
+			MenuMessage = $"Matchmaking failed: {exception.Message}";
+		}
+		finally
+		{
+			_isFinding = false;
+			StateHasChanged();
+		}
 	}
 
-
-	private string FormatSummary( MTGFormat format )
+	private static bool CanJoin( LobbyInformation lobby ) => !lobby.IsFull && !lobby.IsHidden && string.Equals( lobby.Get( "state", "joinable" ), "joinable", StringComparison.OrdinalIgnoreCase );
+	private static string LobbyDetail( LobbyInformation lobby ) => $"{lobby.Members}/{lobby.MaxMembers} players" + (lobby.Ping >= 0 ? $" · {lobby.Ping} ms" : string.Empty);
+	private void JoinLobby( LobbyInformation lobby )
 	{
-		return $"{format.MinimumPlayers}–{format.MaximumPlayers} players · {format.DeckSize}+ cards · {format.StartingLife} life";
+		if ( !CanJoin( lobby ) ) return;
+		MenuMessage = $"Joining {lobby.Name}…";
+		Networking.Connect( lobby.LobbyId );
 	}
 
-
-	private string RootClass()
+	private void ImportEditorDeck()
 	{
-		return Match is { State: not GameState.Lobby } ? "in-match" : string.Empty;
+		if ( string.IsNullOrWhiteSpace( EditorDeckText ) ) { MenuMessage = "Paste a deck list first."; return; }
+		try { EditorResult = new PlainTextDeckParser().Import( EditorDeckText, new DeckImportOptions { DeckName = "Imported Deck" } ); MenuMessage = string.Empty; }
+		catch ( Exception exception ) { EditorResult = null; MenuMessage = exception.Message; }
 	}
 
+	private void ClearEditor() { EditorDeckText = string.Empty; EditorResult = null; MenuMessage = string.Empty; }
+	private void ToggleMultiplayer() { if ( Director is not null ) Director.IsMultiplayer = !Director.IsMultiplayer; }
+	private void ToggleProjection() { if ( TableCamera is not null ) TableCamera.Orthographic = !TableCamera.Orthographic; }
+	private void ChangeViewHeight( float amount ) { if ( TableCamera is not null ) TableCamera.ViewHeight = (TableCamera.ViewHeight + amount).Clamp( 600f, 4000f ); }
+	private static void ExitGame() => Game.Close();
+
+	private void SubmitLobbyDeck()
+	{
+		LobbyIssues = [ ];
+		if ( !DatabaseCompatible ) { LobbyIssues.Add( Database?.FailureReason ?? Database?.StatusMessage ?? "Waiting for the card database to match the host." ); return; }
+		if ( Match is null || string.IsNullOrWhiteSpace( LobbyDeckText ) ) { LobbyIssues.Add( "Paste a deck list before submitting." ); return; }
+		try
+		{
+			DeckImportResult result = new PlainTextDeckParser().Import( LobbyDeckText, new DeckImportOptions { DeckName = "Imported Deck", FormatCode = Director?.FormatFile?.FormatCode } );
+			LobbyIssues = result.Issues.Select( issue => issue.Message ).ToList();
+			if ( result.HasErrors ) return;
+			Match.SubmitDeck( DeckJson.Serialize( result.Deck ) );
+			DeckSubmissionPending = true;
+		}
+		catch ( Exception exception ) { LobbyIssues.Add( exception.Message ); }
+	}
+
+	private void ToggleReady() { if ( Match is not null && DatabaseCompatible ) Match.SetReady( LocalSeat?.Ready != true ); }
+	private void LeaveMatch() { Director?.LeaveGame(); CurrentPage = MenuPage.Main; }
+	private string RootClass() => Match is { State: not MatchState.Lobby } ? "in-match" : string.Empty;
 
 	protected override int BuildHash()
 	{
 		HashCode hash = new();
-		hash.Add( DeckText );
-		hash.Add( Director?.FormatFile );
-		hash.Add( MenuMessage );
-		hash.Add( DeckSubmissionPending );
-		hash.Add( Match?.State );
-		hash.Add( Match?.LobbyRevision );
-		hash.Add( Match?.StatusText );
-		hash.Add( Match?.RequiredDatabaseChecksum );
-		hash.Add( Database?.State );
-		hash.Add( Database?.StatusMessage );
-		hash.Add( Database?.FailureReason );
-		hash.Add( Database?.DatabaseChecksum );
-		hash.Add( LocalSeat?.DeckError );
-
-		if ( Match is not null )
-		{
-			foreach ( Seat seat in Match.Seats )
-			{
-				hash.Add( seat.Index );
-				hash.Add( seat.Player );
-				hash.Add( seat.PlayerName );
-				hash.Add( seat.HasSubmittedDeck );
-				hash.Add( seat.DeckName );
-				hash.Add( seat.DeckCardCount );
-				hash.Add( seat.Ready );
-				hash.Add( seat.DeckError );
-			}
-		}
-
-		foreach ( string issue in ImportIssues )
-			hash.Add( issue );
-
+		hash.Add( CurrentPage ); hash.Add( MenuMessage ); hash.Add( LobbyDeckText ); hash.Add( EditorDeckText ); hash.Add( EditorResult );
+		hash.Add( _isRefreshing ); hash.Add( _isFinding ); hash.Add( Director?.FormatFile ); hash.Add( Director?.LobbyName ); hash.Add( Director?.IsMultiplayer );
+		hash.Add( Database?.State ); hash.Add( Database?.StatusMessage ); hash.Add( Match?.State ); hash.Add( Match?.LobbyRevision ); hash.Add( LocalSeat?.DeckError );
+		hash.Add( TableCamera?.Orthographic ); hash.Add( TableCamera?.ViewHeight );
+		foreach ( LobbyInformation lobby in _lobbies ) { hash.Add( lobby.LobbyId ); hash.Add( lobby.Name ); hash.Add( lobby.Members ); hash.Add( lobby.MaxMembers ); }
+		foreach ( string issue in LobbyIssues ) hash.Add( issue );
 		return hash.ToHashCode();
 	}
 }

@@ -1,4 +1,5 @@
 ﻿#nullable enable
+using Sandbox.Audio;
 using Sandbox.Classes.Cards;
 using Sandbox.Classes.Cards.CardFrames;
 using Sandbox.Classes.Cards.Legality;
@@ -862,6 +863,34 @@ public static class CardDatabase
 		}
 	}
 
+
+	/// <summary>
+	///     Returns a uniformly selected printing from the open card database.
+	/// </summary>
+	/// <exception cref = "InvalidOperationException">
+	///     The database is not open or contains no indexed cards.
+	/// </exception>
+	public static NormalizedCard GetRandomCard()
+	{
+		DatabaseState state;
+		int           recordId;
+		byte[]        bytes;
+
+		lock ( StateLock )
+		{
+			state = GetOpenState();
+
+			if ( state.Entries.Length == 0 )
+				throw new InvalidOperationException( "The card database contains no indexed cards." );
+
+			recordId = Random.Shared.Next( state.Entries.Length );
+			CardIndexEntry entry = GetIndexEntry( state, recordId );
+			bytes = ReadRecordBytes( state, entry );
+		}
+
+		return DeserializeCard( bytes, recordId, state );
+	}
+	
 
 	private sealed class DatabaseState : IDisposable
 	{

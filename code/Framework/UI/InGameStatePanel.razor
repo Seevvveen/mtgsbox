@@ -8,7 +8,7 @@
 @namespace Sandbox.Framework.UI
 
 <root class="@RootClass()">
-	@if ( Match is { State: GameState.Playing } )
+	@if ( Match is { State: MatchState.Playing } )
 	{
 		<div class="turn-card">
 			<div class="turn-header">
@@ -80,7 +80,7 @@
 	private Seat PrioritySeat => SeatFor( Match?.PriorityPlayerId ?? Guid.Empty );
 	private bool IsLocalActive => LocalSeat is not null && Match?.ActivePlayerId == LocalSeat.Player;
 	private bool IsLocalPriority => LocalSeat is not null && Match?.PriorityPlayerId == LocalSeat.Player;
-	private bool CanUsePrimaryAction => Match is { State: GameState.Playing } &&
+	private bool CanUsePrimaryAction => Match is { State: MatchState.Playing } &&
 	                                    (IsLocalPriority || IsLocalActive && Match.Phase == TurnPhase.Ending);
 	private string ActivePlayerName => PlayerName( ActiveSeat, "No active player" );
 	private string TurnOwnerText => IsLocalActive ? "Your turn" : $"{ActivePlayerName}'s turn";
@@ -179,7 +179,7 @@
 
 	private string RootClass()
 	{
-		return Match is { State: GameState.Playing } ? "visible" : string.Empty;
+		return Match is { State: MatchState.Playing } ? "visible" : string.Empty;
 	}
 
 

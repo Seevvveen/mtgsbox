@@ -5,435 +5,121 @@ GameMenu
 	left: 0;
 	right: 0;
 	bottom: 0;
-	padding: 56px;
+	padding: 48px;
 	justify-content: center;
 	align-items: center;
-	background-color: #0b0d12f2;
+	background-color: #090b11f5;
 	font-family: Poppins;
-	color: #f6f3eb;
+	color: #f5f2e9;
 	pointer-events: all;
 
-	&.in-match
+	&.in-match { display: none; pointer-events: none; }
+
+	.menu-shell, .lobby-shell
 	{
-		display: none;
-		pointer-events: none;
-	}
-
-	.menu-card,
-	.lobby-shell
-	{
-		flex-direction: column;
-		background-color: #171a22;
-		border: 1px solid #393d49;
-		border-radius: 18px;
-		box-shadow: 0 24px 80px #000a;
-	}
-
-	.menu-card
-	{
-		width: 640px;
-		padding: 52px;
-		gap: 18px;
-	}
-
-	.eyebrow
-	{
-		font-size: 13px;
-		font-weight: 700;
-		letter-spacing: 2px;
-		color: #e0ad5e;
-	}
-
-	.game-title
-	{
-		font-size: 48px;
-		font-weight: 800;
-		line-height: 52px;
-	}
-
-	.game-subtitle,
-	.lobby-subtitle,
-	.panel-copy,
-	.deck-summary,
-	.waiting-host,
-	.auto-start
-	{
-		color: #a9adba;
-	}
-
-	.game-subtitle
-	{
-		font-size: 17px;
-		margin-bottom: 14px;
-	}
-
-	.format-section
-	{
-		flex-direction: column;
-		gap: 10px;
-	}
-
-	.format-label
-	{
-		font-size: 11px;
-		font-weight: 700;
-		letter-spacing: 1.5px;
-		color: #777d8d;
-	}
-
-	.format-name
-	{
-		font-size: 18px;
-		font-weight: 700;
-	}
-
-	.format-options
-	{
-		width: 100%;
-		flex-direction: column;
-		gap: 8px;
-		max-height: 230px;
-		overflow: scroll;
-	}
-
-	.format-option
-	{
-		width: 100%;
-		height: auto;
-		min-height: 92px;
-		padding: 14px 16px;
-		flex-direction: column;
-		align-items: flex-start;
-		gap: 3px;
-		background-color: #101219;
-		border: 1px solid #303541;
-		color: #f6f3eb;
-		text-align: left;
-
-		&.selected
-		{
-			background-color: #2c211a;
-			border-color: #c87938;
-		}
-	}
-
-	.format-option-top
-	{
-		width: 100%;
-		justify-content: space-between;
-		align-items: center;
-	}
-
-	.selection-mark
-	{
-		font-family: Material Icons;
-		font-size: 22px;
-		color: #e0ad5e;
-	}
-
-	.format-code
-	{
-		font-size: 11px;
-		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 1px;
-		color: #777d8d;
-	}
-
-	.format-details
-	{
-		font-size: 13px;
-		color: #c0c4cf;
-	}
-
-	.no-formats,
-	.menu-message
-	{
-		padding: 12px 14px;
-		background-color: #442528;
-		border-radius: 7px;
-		font-size: 13px;
-		color: #ffb2b2;
-	}
-
-	button
-	{
-		height: 48px;
-		padding: 0 24px;
-		justify-content: center;
-		align-items: center;
-		border: 0;
-		border-radius: 8px;
-		font-family: Poppins;
-		font-size: 15px;
-		font-weight: 700;
-		cursor: pointer;
-
-		&:hover
-		{
-			filter: brightness( 1.12 );
-		}
-
-		&:active
-		{
-			filter: brightness( 0.9 );
-		}
-
-		&.disabled
-		{
-			opacity: 0.42;
-			cursor: default;
-		}
-	}
-
-	.primary
-	{
-		background-color: #c87938;
-		color: #fff;
-	}
-
-	.secondary
-	{
-		background-color: #303541;
-		color: #fff;
-	}
-
-	.start-button
-	{
-		width: 100%;
-		margin-top: 6px;
-	}
-
-	.waiting-host
-	{
-		padding: 14px;
-		justify-content: center;
-		background-color: #101219;
-		border-radius: 8px;
-	}
-
-	.lobby-shell
-	{
-		width: 1120px;
-		max-height: 820px;
-		padding: 32px;
-		gap: 24px;
-	}
-
-	.lobby-header,
-	.lobby-footer
-	{
-		width: 100%;
-		justify-content: space-between;
-		align-items: center;
-	}
-
-	.lobby-header > div:first-child
-	{
-		flex-direction: column;
-		gap: 4px;
-	}
-
-	.lobby-title
-	{
-		font-size: 34px;
-		font-weight: 800;
-	}
-
-	.lobby-subtitle
-	{
-		font-size: 15px;
-	}
-
-	.player-count
-	{
-		padding: 9px 14px;
-		background-color: #252a35;
+		background-color: #141821;
+		border: 1px solid #343b49;
 		border-radius: 20px;
-		font-size: 14px;
-		font-weight: 600;
+		box-shadow: 0 28px 90px #000b;
+		overflow: hidden;
 	}
 
-	.lobby-content
-	{
-		width: 100%;
-		gap: 22px;
-		min-height: 440px;
-	}
+	.menu-shell { width: 1040px; height: 720px; }
+	.brand-panel { width: 350px; padding: 48px; flex-direction: column; justify-content: center; background-color: #10131a; border-right: 1px solid #2d3340; }
+	.brand-mark { width: 66px; height: 66px; margin-bottom: 26px; justify-content: center; align-items: center; background-color: #c57435; border-radius: 16px; font-size: 40px; font-weight: 900; color: white; }
+	.eyebrow, .section-label { font-size: 11px; font-weight: 800; letter-spacing: 2px; color: #d79a58; }
+	.game-title { margin-top: 8px; font-size: 48px; line-height: 50px; font-weight: 850; }
+	.game-subtitle, .page-copy, .muted, .setting-detail, .action-detail, .format-details, .match-detail { color: #969dac; }
+	.game-subtitle { margin-top: 18px; font-size: 15px; line-height: 22px; }
+	.database-status { margin-top: 42px; gap: 8px; align-items: center; font-size: 11px; color: #777f8e; }
+	.status-dot { width: 8px; height: 8px; border-radius: 50%; background-color: #a64f4f; }
+	.database-status.ready .status-dot { background-color: #53bd80; }
 
-	.players-panel,
-	.deck-panel
-	{
-		flex-direction: column;
-		gap: 12px;
-		padding: 22px;
-		background-color: #101219;
-		border-radius: 12px;
-	}
+	.content-panel { flex-grow: 1; min-width: 0; padding: 42px; flex-direction: column; gap: 22px; }
+	.page-heading { flex-direction: column; gap: 3px; }
+	.page-title { font-size: 30px; font-weight: 800; }
+	.page-copy { font-size: 13px; }
+	.subpage-header { gap: 15px; align-items: center; flex-shrink: 0; }
+	.back-button { width: 42px; height: 42px; padding: 0; font-family: Material Icons; font-size: 22px; }
 
-	.players-panel
-	{
-		width: 52%;
-		overflow: scroll;
-	}
+	.main-actions { flex-grow: 1; flex-direction: column; gap: 10px; }
+	button { border: 0; border-radius: 9px; background-color: #252b37; color: #f5f2e9; font-family: Poppins; font-weight: 650; cursor: pointer; }
+	button:hover { filter: brightness( 1.15 ); }
+	button:active { filter: brightness( 0.9 ); }
+	button.disabled { opacity: .38; cursor: default; }
+	button.primary { background-color: #b96830; }
+	.menu-action { width: 100%; min-height: 72px; padding: 13px 18px; gap: 15px; align-items: center; text-align: left; background-color: #1c212c; border: 1px solid #303745; }
+	.menu-action.primary { background-color: #3b281e; border-color: #9d5d32; }
+	.menu-action.danger { margin-top: auto; color: #e8aaa7; }
+	.action-icon { width: 36px; font-family: Material Icons; font-size: 25px; color: #d99a5d; justify-content: center; }
+	.danger .action-icon { color: #d97872; }
+	.action-copy { flex-direction: column; gap: 2px; }
+	.action-title { font-size: 16px; font-weight: 750; }
+	.action-detail { font-size: 11px; font-weight: 450; }
 
-	.deck-panel
-	{
-		flex-grow: 1;
-	}
+	.scroll-content, .settings-list, .deck-editor { flex-grow: 1; min-height: 0; flex-direction: column; gap: 12px; overflow-y: scroll; }
+	.format-list { flex-direction: column; gap: 8px; flex-shrink: 0; }
+	.format-option { width: 100%; min-height: 76px; padding: 13px 16px; justify-content: space-between; align-items: center; text-align: left; background-color: #1b202a; border: 1px solid #303744; }
+	.format-option.selected { background-color: #38271f; border-color: #a9673b; }
+	.format-name { font-size: 16px; font-weight: 750; }
+	.format-details { margin-top: 3px; font-size: 11px; }
+	.selection-mark { font-family: Material Icons; font-size: 22px; color: #e0a160; }
+	.text-input, .deck-input { width: 100%; flex-shrink: 0; padding: 13px; background-color: #0c0f15; border: 1px solid #303744; border-radius: 8px; color: white; }
+	.text-input { height: 48px; }
+	.wide-button { width: 100%; height: 50px; flex-shrink: 0; }
 
-	.panel-heading
-	{
-		font-size: 20px;
-		font-weight: 700;
-	}
+	.setting-row { width: 100%; min-height: 70px; padding: 13px 16px; justify-content: space-between; align-items: center; text-align: left; background-color: #1b202a; }
+	.setting-row > div:first-child { flex-direction: column; gap: 3px; }
+	.setting-row.static { cursor: default; }
+	.setting-name { font-size: 15px; font-weight: 700; }
+	.setting-detail { font-size: 11px; font-weight: 450; }
+	.setting-value { padding: 6px 9px; background-color: #313947; border-radius: 5px; font-size: 10px; letter-spacing: 1px; color: #e2ad70; }
+	.stepper { gap: 8px; align-items: center; }
+	.stepper button { width: 30px; height: 30px; padding: 0; font-family: Material Icons; }
 
-	.panel-copy
-	{
-		font-size: 13px;
-		line-height: 19px;
-	}
+	.match-toolbar { justify-content: space-between; align-items: center; flex-shrink: 0; }
+	.match-count { font-size: 12px; color: #abb1bd; }
+	.small-button, .join-button, .leave-button { min-height: 38px; padding: 0 16px; }
+	.match-list { flex-grow: 1; min-height: 0; flex-direction: column; gap: 8px; overflow-y: scroll; }
+	.match-row { width: 100%; min-height: 68px; padding: 12px 14px; align-items: center; gap: 12px; background-color: #1b202a; border-radius: 9px; }
+	.match-info { flex-grow: 1; flex-direction: column; gap: 2px; }
+	.match-name { font-size: 15px; font-weight: 750; }
+	.match-detail { font-size: 11px; }
+	.join-button { background-color: #326846; }
+	.empty-state { width: 100%; padding: 18px; flex-direction: column; justify-content: center; align-items: center; gap: 5px; background-color: #191e28; border-radius: 9px; color: #b6bbc5; }
+	.empty-state.tall { flex-grow: 1; }
+	.empty-icon { font-family: Material Icons; font-size: 34px; color: #6c7483; }
 
-	.player-row
-	{
-		width: 100%;
-		min-height: 66px;
-		padding: 10px 12px;
-		gap: 10px;
-		align-items: center;
-		background-color: #1a1e27;
-		border: 1px solid transparent;
-		border-radius: 9px;
+	.deck-input { height: 210px; overflow-y: scroll; }
+	.deck-editor-actions { justify-content: flex-end; gap: 9px; flex-shrink: 0; }
+	.deck-result { min-height: 0; flex-grow: 1; flex-direction: column; gap: 7px; padding: 13px; background-color: #10141b; border-radius: 9px; overflow: hidden; }
+	.result-summary { justify-content: space-between; font-weight: 750; }
+	.card-list { flex-grow: 1; min-height: 0; flex-direction: column; gap: 3px; overflow-y: scroll; }
+	.card-row { min-height: 32px; padding: 5px 8px; gap: 8px; align-items: center; background-color: #1c222d; border-radius: 4px; font-size: 12px; }
+	.quantity { width: 34px; color: #dfa464; font-weight: 750; }
+	.card-name { flex-grow: 1; }
+	.card-section { color: #747d8c; text-transform: uppercase; font-size: 9px; }
+	.issue, .menu-message { padding: 8px 10px; background-color: #48282a; border-radius: 6px; color: #ffb4b4; font-size: 11px; flex-shrink: 0; }
 
-		&.local
-		{
-			border-color: #9c673d;
-		}
-
-		&.empty
-		{
-			opacity: 0.46;
-		}
-	}
-
-	.seat-number
-	{
-		width: 34px;
-		height: 34px;
-		flex-shrink: 0;
-		justify-content: center;
-		align-items: center;
-		background-color: #2c313d;
-		border-radius: 50%;
-		font-size: 14px;
-		font-weight: 700;
-	}
-
-	.player-info
-	{
-		flex-grow: 1;
-		flex-direction: column;
-		gap: 3px;
-	}
-
-	.player-name
-	{
-		font-size: 15px;
-		font-weight: 650;
-	}
-
-	.deck-summary
-	{
-		font-size: 12px;
-	}
-
-	.deck-badge,
-	.ready-badge
-	{
-		padding: 5px 8px;
-		background-color: #292e39;
-		border-radius: 5px;
-		font-size: 11px;
-		font-weight: 650;
-		color: #8f95a3;
-
-		&.complete
-		{
-			background-color: #204b38;
-			color: #8ee0ad;
-		}
-	}
-
-	.deck-input
-	{
-		width: 100%;
-		height: 236px;
-		flex-shrink: 0;
-		padding: 14px;
-		background-color: #090b10;
-		border: 1px solid #303541;
-		border-radius: 8px;
-		font-size: 14px;
-		color: white;
-		overflow: scroll;
-	}
-
-	.issues
-	{
-		width: 100%;
-		max-height: 94px;
-		flex-direction: column;
-		gap: 4px;
-		overflow-x: hidden;
-		overflow-y: scroll;
-	}
-
-	.issue
-	{
-		width: 100%;
-		flex-shrink: 0;
-		padding: 6px 8px;
-		background-color: #442528;
-		border-radius: 5px;
-		font-size: 12px;
-		color: #ffb2b2;
-	}
-
-	.server-error
-	{
-		width: 100%;
-	}
-
-	.deck-actions
-	{
-		width: 100%;
-		gap: 10px;
-		margin-top: auto;
-
-		button
-		{
-			flex-grow: 1;
-		}
-	}
-
-	.lobby-footer
-	{
-		padding-top: 4px;
-		font-size: 12px;
-	}
-
-	.privacy
-	{
-		align-items: center;
-		gap: 7px;
-		color: #b7bbc5;
-	}
-
-	.status-dot
-	{
-		width: 8px;
-		height: 8px;
-		background-color: #54c983;
-		border-radius: 50%;
-	}
+	.lobby-shell { width: 1120px; max-height: 780px; padding: 30px; flex-direction: column; gap: 20px; }
+	.lobby-header, .lobby-footer { justify-content: space-between; align-items: center; }
+	.lobby-header > div:first-child { flex-direction: column; gap: 3px; }
+	.lobby-title { font-size: 30px; font-weight: 800; }
+	.player-count { padding: 8px 13px; background-color: #252c38; border-radius: 16px; font-size: 12px; }
+	.lobby-content { min-height: 430px; gap: 18px; }
+	.players-panel, .submission-panel { padding: 20px; flex-direction: column; gap: 10px; background-color: #0f131a; border-radius: 11px; }
+	.players-panel { width: 52%; overflow-y: scroll; }
+	.submission-panel { flex-grow: 1; }
+	.section-title { font-size: 18px; font-weight: 750; }
+	.player-row { min-height: 62px; padding: 9px 11px; align-items: center; gap: 9px; background-color: #1b202a; border: 1px solid transparent; border-radius: 8px; }
+	.player-row.local { border-color: #9c653d; }
+	.seat-number { width: 32px; height: 32px; justify-content: center; align-items: center; background-color: #303744; border-radius: 50%; }
+	.player-info { flex-grow: 1; flex-direction: column; }
+	.player-name { font-weight: 700; }
+	.ready-badge { padding: 5px 8px; background-color: #343a46; border-radius: 5px; color: #9da4b2; font-size: 10px; }
+	.ready-badge.ready { background-color: #244c37; color: #8de0ac; }
+	.lobby-deck { height: 220px; }
+	.lobby-actions { margin-top: auto; gap: 9px; }
+	.lobby-actions button { flex-grow: 1; height: 45px; }
+	.leave-button { background-color: #40272a; color: #e8aaa7; }
 }

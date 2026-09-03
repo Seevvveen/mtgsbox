@@ -57,7 +57,7 @@ public static class CardFaceRenderer
 		if ( Application.IsHeadless )
 			throw new InvalidOperationException( "Card textures cannot be created on a headless host." );
 
-		string key = $"concealed|{StandardBackImageUrl}";
+		string key = $"material:{CardMaterialFactory.CacheVersion}|concealed|{StandardBackImageUrl}";
 
 		lock ( CacheLock )
 		{
@@ -86,7 +86,7 @@ public static class CardFaceRenderer
 		string? frontUrl       = GetImageUrl( card.Gameplay.Faces[0].Images ) ?? GetImageUrl( card.Presentation.Images );
 		string? printedBackUrl = GetPrintedBackUrl( card );
 		string  backUrl        = printedBackUrl ?? StandardBackImageUrl;
-		string  key            = $"{card.Gameplay.ScryfallId:N}|{frontUrl}|{backUrl}|" + $"{concealed}|{privateView}";
+		string  key            = $"material:{CardMaterialFactory.CacheVersion}|{card.Gameplay.ScryfallId:N}|{frontUrl}|{backUrl}|" + $"{concealed}|{privateView}";
 
 		lock ( CacheLock )
 		{
